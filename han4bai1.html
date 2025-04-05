@@ -157,6 +157,12 @@
             color: #555;
             margin: 5px 0;
         }
+        .timer {
+            font-size: 18px;
+            margin: 10px 0;
+            color: #ff0000;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -190,6 +196,7 @@
             <h1>TRÒ CHƠI ĐOÁN TỪ</h1>
         </div>
         <div class="score-display">ĐIỂM: <span id="score">0</span></div>
+        <div class="timer" id="timer">Thời gian: 15s</div>
         <div class="progress-bar">
             <div class="progress" id="progress"></div>
         </div>
@@ -236,7 +243,7 @@
             { word: "放大", pinyin: "fangda", hint: "Phóng to", wordLength: 2 },
             { word: "倍", pinyin: "bei", hint: "Lần; gấp", wordLength: 1 },
             { word: "公分", pinyin: "gongfen", hint: "Xăng-ti-mét", wordLength: 2 },
-            { word: "差 (一) 点儿", pinyin: "cha (yi) dianr", hint: "Gần như; hầu như", wordLength: 5 },
+            { word: "差点儿", pinyin: "chadianr", hint: "Gần như; hầu như", wordLength: 3 },
             { word: "碰", pinyin: "peng", hint: "Gặp; đụng", wordLength: 1 },
             { word: "起", pinyin: "qi", hint: "Vụ (đếm tai nạn)", wordLength: 1 },
             { word: "事故", pinyin: "shigu", hint: "Tai nạn", wordLength: 2 },
@@ -270,8 +277,12 @@
         let score = 0;
         let difficulty = "easy"; // Default difficulty
         let hintsUsed = 0;
+        let timeLeft = 15;
+        let timerInterval;
+        let questionType; // "hanzi" or "pinyin"
         const maxHints = 3;
         const maxGuesses = 6;
+        let wrongCount = 0;
         
         // DOM elements
         const wordDisplay = document.getElementById('wordDisplay');
@@ -292,6 +303,7 @@
         const easyButton = document.getElementById('easyButton');
         const hardButton = document.getElementById('hardButton');
         const currentInstruction = document.getElementById('currentInstruction');
+        const timerDisplay = document.getElementById('timer');
         
         // Hangman parts
         const hangmanParts = [
@@ -310,7 +322,7 @@
             
             currentQuestionIndex = 0;
             score = 0;
-            hintsUsed = 0;
+            wrongCount = 0;
             scoreDisplay.textContent = score;
             loadNextQuestion();
             introContainer.classList.add('hidden');
@@ -327,7 +339,7 @@
         
         function loadNextQuestion() {
             if (currentQuestionIndex >= wordHintsPinyin.length) {
-                message.textContent = `CHÚC MỪNG! BẠN ĐÃ HOÀN THÀNH TẤT CẢ CÁC CÂU! TỔNG ĐIỂM: ${score}`;
+                message.textContent = `CHÚC MỪNG! BẠN ĐÃ HOÀN THÀNH TẤT CẢ CÁC CÂU! TỔNG ĐIỂM: ${score}. BẠN ĐÃ SAI ${wrongCount} CÂU.`;
                 guessButton.disabled = true;
                 hintButton.disabled = true;
                 return;
@@ -339,10 +351,14 @@
             selectedWordLength = question.wordLength;
             hintDisplay.textContent = question.hint;
             
+            // Randomly decide question type
+            questionType = Math.random() < 0.5 ? "hanzi" : "pinyin";
+            
             guessedLetters = [];
             guessedPinyin = [];
             incorrectGuesses = 0;
             hintsUsed = 0;
+            timeLeft = 15;
             
             guessedLettersDisplay.textContent = "";
             message.textContent = "";
@@ -368,6 +384,27 @@
                 document.querySelector('.pinyin-display-label').style.display = "block";
                 currentInstruction.textContent = "Chú ý: Bạn có thể điền chữ Hán hoặc pinyin.";
             }
+            
+            startTimer();
+        }
+        
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 15;
+            timerDisplay.textContent = `Thời gian: ${timeLeft}s`;
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = `Thời gian: ${timeLeft}s`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    message.textContent = `Thời gian hết! Câu trả lời: ${selectedWord} (${selectedPinyin})`;
+                    wrongCount++;
+                    currentQuestionIndex++;
+                    setTimeout(loadNextQuestion, 2000);
+                }
+            }, 1000);
         }
         
         function updateWordDisplay() {
@@ -399,126 +436,50 @@
                 return;
             }
             
-            if (guess.length === 1) {
-                if (difficulty === "easy") {
-                    // Check if it's a letter or pinyin
-                    if (guessedLetters.includes(guess) || guessedPinyin.includes(guess)) {
-                        message.textContent = "Bạn đã đoán ký tự này rồi!";
-                        return;
-                    }
-                    
-                    // Check if it's a letter
-                    if (selectedWord.includes(guess)) {
-                        guessedLetters.push(guess);
-                        guessedLettersDisplay.textContent = guessedLetters.join(', ');
-                        message.textContent = "Đúng rồi!";
-                        score += 10;
-                        scoreDisplay.textContent = score;
-                        updateWordDisplay();
-                    } 
-                    // Check if it's a pinyin
-                    else if (selectedPinyin.includes(guess)) {
-                        guessedPinyin.push(guess);
-                        guessedLettersDisplay.textContent = guessedPinyin.join(', ');
-                        message.textContent = "Đúng rồi!";
-                        score += 10;
-                        scoreDisplay.textContent = score;
-                        updatePinyinDisplay();
-                    } else {
-                        message.textContent = "Sai rồi!";
-                        incorrectGuesses++;
-                        
-                        if (incorrectGuesses <= maxGuesses) {
-                            hangmanParts[incorrectGuesses - 1].style.display = 'block';
-                        }
-                        
-                        if (incorrectGuesses >= maxGuesses) {
-                            message.textContent = `Bạn thua rồi! Câu trả lời: ${selectedWord} (${selectedPinyin})`;
-                            currentQuestionIndex++;
-                            setTimeout(loadNextQuestion, 2000);
-                        }
-                    }
+            if (questionType === "hanzi") {
+                // Question requires Vietnamese meaning
+                if (guess === selectedWord) {
+                    message.textContent = `Chúc mừng! Bạn đã thắng! Câu trả lời: ${selectedWord} (${selectedPinyin})`;
+                    score += 100;
+                    scoreDisplay.textContent = score;
+                    currentQuestionIndex++;
+                    setTimeout(loadNextQuestion, 2000);
                 } else {
-                    // Hard mode: only check for letters
-                    if (guessedLetters.includes(guess)) {
-                        message.textContent = "Bạn đã đoán chữ này rồi!";
-                        return;
+                    message.textContent = "Câu trả lời sai rồi!";
+                    incorrectGuesses++;
+                    
+                    if (incorrectGuesses <= maxGuesses) {
+                        hangmanParts[incorrectGuesses - 1].style.display = 'block';
                     }
                     
-                    guessedLetters.push(guess);
-                    guessedLettersDisplay.textContent = guessedLetters.join(', ');
-                    
-                    if (selectedWord.includes(guess)) {
-                        message.textContent = "Đúng rồi!";
-                        score += 10;
-                        scoreDisplay.textContent = score;
-                        updateWordDisplay();
-                        
-                        if (checkWin()) {
-                            score += 50;
-                            scoreDisplay.textContent = score;
-                            message.textContent = `Chúc mừng! Bạn đã thắng! Câu trả lời: ${selectedWord} (${selectedPinyin})`;
-                            currentQuestionIndex++;
-                            setTimeout(loadNextQuestion, 2000);
-                        }
-                    } else {
-                        message.textContent = "Sai rồi!";
-                        incorrectGuesses++;
-                        
-                        if (incorrectGuesses <= maxGuesses) {
-                            hangmanParts[incorrectGuesses - 1].style.display = 'block';
-                        }
-                        
-                        if (incorrectGuesses >= maxGuesses) {
-                            message.textContent = `Bạn thua rồi! Câu trả lời: ${selectedWord} (${selectedPinyin})`;
-                            currentQuestionIndex++;
-                            setTimeout(loadNextQuestion, 2000);
-                        }
+                    if (incorrectGuesses >= maxGuesses) {
+                        message.textContent = `Bạn thua rồi! Câu trả lời: ${selectedWord} (${selectedPinyin})`;
+                        wrongCount++;
+                        currentQuestionIndex++;
+                        setTimeout(loadNextQuestion, 2000);
                     }
                 }
             } else {
-                // Check if the guess is the full word or pinyin
-                if (difficulty === "easy") {
-                    if (guess === selectedWord || guess === selectedPinyin) {
-                        message.textContent = `Chúc mừng! Bạn đã thắng! Câu trả lời: ${selectedWord} (${selectedPinyin})`;
-                        score += 100;
-                        scoreDisplay.textContent = score;
-                        currentQuestionIndex++;
-                        setTimeout(loadNextQuestion, 2000);
-                    } else {
-                        message.textContent = "Câu trả lời sai rồi!";
-                        incorrectGuesses++;
-                        
-                        if (incorrectGuesses <= maxGuesses) {
-                            hangmanParts[incorrectGuesses - 1].style.display = 'block';
-                        }
-                        
-                        if (incorrectGuesses >= maxGuesses) {
-                            message.textContent = `Bạn thua rồi! Câu trả lời: ${selectedWord} (${selectedPinyin})`;
-                            currentQuestionIndex++;
-                            setTimeout(loadNextQuestion, 2000);
-                        }
-                    }
+                // Question requires Hanzi or Pinyin
+                if (guess === selectedWord || guess === selectedPinyin) {
+                    message.textContent = `Chúc mừng! Bạn đã thắng! Câu trả lời: ${selectedWord} (${selectedPinyin})`;
+                    score += 100;
+                    scoreDisplay.textContent = score;
+                    currentQuestionIndex++;
+                    setTimeout(loadNextQuestion, 2000);
                 } else {
-                    if (guess === selectedWord) {
-                        message.textContent = `Chúc mừng! Bạn đã thắng! Câu trả lời: ${selectedWord} (${selectedPinyin})`;
-                        score += 100;
-                        scoreDisplay.textContent = score;
+                    message.textContent = "Câu trả lời sai rồi!";
+                    incorrectGuesses++;
+                    
+                    if (incorrectGuesses <= maxGuesses) {
+                        hangmanParts[incorrectGuesses - 1].style.display = 'block';
+                    }
+                    
+                    if (incorrectGuesses >= maxGuesses) {
+                        message.textContent = `Bạn thua rồi! Câu trả lời: ${selectedWord} (${selectedPinyin})`;
+                        wrongCount++;
                         currentQuestionIndex++;
                         setTimeout(loadNextQuestion, 2000);
-                    } else {
-                        message.textContent = "Câu trả lời sai rồi!";
-                        incorrectGuesses++;
-                        
-                        if (incorrectGuesses <= maxGuesses) {
-                            hangmanParts[incorrectGuesses - 1].style.display = 'block';
-                        }
-                        
-                        if (incorrectGuesses >= maxGuesses) {
-                            message.textContent = `Bạn thua rồi! Câu trả lời: ${selectedWord} (${selectedPinyin})`;
-                            currentQuestionIndex++;
-                            setTimeout(loadNextQuestion, 2000);
-                        }
                     }
                 }
             }
@@ -584,6 +545,7 @@
             
             if (incorrectGuesses >= maxGuesses) {
                 message.textContent = `Bạn thua rồi! Câu trả lời: ${selectedWord} (${selectedPinyin})`;
+                wrongCount++;
                 currentQuestionIndex++;
                 setTimeout(loadNextQuestion, 2000);
             }
