@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Luyện Tiếng Trung Vui Vẻ 🐼 (AI)</title> <style>
+    <title>Luyện Tiếng Trung Vui Vẻ 🐼 (Gemini Flash + Google Form)</title> <style>
         /* ----- CSS không đổi ----- */
         body { font-family: sans-serif; line-height: 1.6; background-color: #f0f8ff; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; margin: 0; }
         #game-container { background-color: #ffffff; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); max-width: 800px; width: 100%; text-align: center; box-sizing: border-box; }
@@ -50,7 +50,15 @@
         <button id="next-button" class="hidden">Tiếp tục 💪</button>
     </div>
     <div id="tooltip" class="tooltip"><span id="tooltip-hanzi"></span><span id="tooltip-pinyin"></span><span id="tooltip-meaning"></span></div>
-    <div id="summary-page"><h2>🎉 Hoàn Thành! 🎉</h2><p>Tổng thời gian: <span id="summary-time"></span></p><p>Số câu đúng: <span id="summary-correct"></span></p><p>Số câu sai: <span id="summary-incorrect"></span></p><h3>Chi tiết lỗi sai:</h3><ul id="summary-errors"></ul><button id="restart-button">Chơi lại từ đầu 🔁</button></div>
+    <div id="summary-page">
+        <h2>🎉 Hoàn Thành! 🎉</h2>
+        <p>Tên học viên: <span id="summary-player-name"></span></p> <p>Tổng thời gian: <span id="summary-time"></span></p>
+        <p>Số câu đúng: <span id="summary-correct"></span></p>
+        <p>Số câu sai: <span id="summary-incorrect"></span></p>
+        <h3>Chi tiết lỗi sai:</h3>
+        <ul id="summary-errors"></ul>
+        <button id="submit-report-button" style="background-color: #28a745;">Nộp Báo Cáo Lên Google Form 📋</button> <button id="restart-button">Chơi lại từ đầu 🔁</button>
+    </div>
 
     <script>
         // ----- DỮ LIỆU TRÒ CHƠI (Không đổi) -----
@@ -62,6 +70,17 @@
         let currentPart = 0; let startTime; let timerInterval;
         let gameResults = { correct: 0, incorrect: 0, errors: [], totalTime: '00:00' };
         let currentHintIndex = 0; let currentVocabIndexPart1 = 0; let currentTargetWordPart1 = null;
+        let playerName = ""; // Lưu tên người chơi
+
+        // ----- GOOGLE FORM CONFIGURATION (ĐÃ CẬP NHẬT) -----
+        // Lưu ý: URL action đã được tự động sửa từ /viewform thành /formResponse để gửi dữ liệu.
+        const GOOGLE_FORM_ACTION_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeBAu4nmQQX6F3wMeoEzwgCH-JFKT8e1wJ3u-yp4KANey39Fw/formResponse"; // <-- Đã cập nhật và sửa lỗi URL
+        const STUDENT_NAME_ENTRY_ID = "entry.497915687";    // <-- Đã cập nhật
+        const TOTAL_TIME_ENTRY_ID = "entry.1644850563";      // <-- Đã cập nhật
+        const CORRECT_COUNT_ENTRY_ID = "entry.1575464331";   // <-- Đã cập nhật
+        const INCORRECT_COUNT_ENTRY_ID = "entry.1038973429"; // <-- Đã cập nhật
+        const ERRORS_LIST_ENTRY_ID = "entry.888446367";      // <-- Đã cập nhật
+        // ----------------------------------------------------
 
         // ----- DOM ELEMENTS (Không đổi) -----
         const getEl = (id) => document.getElementById(id);
@@ -73,83 +92,45 @@
         async function callAI(prompt) {
             const currentFeedbackEl = feedbackTextEl();
             const currentFeedbackSectionEl = feedbackSectionEl();
-
-            console.log("--- Gọi AI (Gemini Flash) với prompt ---"); // Đổi tên
+            console.log("--- Gọi AI (Gemini Flash) với prompt ---");
             console.log(prompt);
              if (!currentFeedbackEl || !currentFeedbackSectionEl) { console.error("Feedback elements not found!"); return { isCorrect: false, explanation: "Lỗi giao diện: Không tìm thấy vùng hiển thị phản hồi." }; }
-            currentFeedbackEl.textContent = "🧠 AI đang suy nghĩ..."; // Đổi tên AI
+            currentFeedbackEl.textContent = "🧠 Gemini Flash AI đang suy nghĩ...";
             currentFeedbackSectionEl.className = 'info';
             currentFeedbackSectionEl.style.display = 'block';
 
-            // *** THÔNG TIN API Google Gemini ***
-            // !! CẢNH BÁO BẢO MẬT !! - Vẫn áp dụng!
+            // !! CẢNH BÁO BẢO MẬT !!
             const apiKey = 'AIzaSyBvdzFJAA8xSTMZ17nse19boON9zGopUyU'; // <-- API Key Gemini của bạn
             // !! KẾT THÚC CẢNH BÁO BẢO MẬT !!
 
-            // ===>>> THAY ĐỔI MODEL TẠI ĐÂY <<<===
-            // Endpoint cho model gemini-1.5-flash-latest (thay vì gemini-pro)
             const modelName = 'gemini-1.5-flash-latest'; // Sử dụng model Flash mới nhất
             const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-            // ===>>> KẾT THÚC THAY ĐỔI MODEL <<<===
 
-
-            const generationConfig = {
-                temperature: 0.5,
-                maxOutputTokens: 300,
-            };
-             const safetySettings = [ { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }, { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" }, { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }, { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }, ];
+            const generationConfig = { temperature: 0.5, maxOutputTokens: 300, };
+            const safetySettings = [ { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }, { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" }, { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }, { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }, ];
 
             try {
                 const response = await fetch(apiEndpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ "text": prompt }] }],
-                        generationConfig: generationConfig,
-                         safetySettings: safetySettings
-                    }),
+                    body: JSON.stringify({ contents: [{ parts: [{ "text": prompt }] }], generationConfig: generationConfig, safetySettings: safetySettings }),
                 });
-
-                if (!response.ok) {
-                    let errorData;
-                    try { errorData = await response.json(); console.error("Lỗi API (JSON):", errorData); } catch (e) { const errorText = await response.text(); console.error("Lỗi API (Text):", errorText); errorData = { error: { message: errorText || 'Không đọc được lỗi' } }; }
-                    const errorMessage = `Lỗi API ${response.status}: ${errorData?.error?.message || response.statusText || 'Không rõ chi tiết'}. Vui lòng kiểm tra lại API Key và kết nối mạng.`;
-                     throw new Error(errorMessage);
-                }
-
+                if (!response.ok) { let errorData; try { errorData = await response.json(); console.error("Lỗi API (JSON):", errorData); } catch (e) { const errorText = await response.text(); console.error("Lỗi API (Text):", errorText); errorData = { error: { message: errorText || 'Không đọc được lỗi' } }; } const errorMessage = `Lỗi API ${response.status}: ${errorData?.error?.message || response.statusText || 'Không rõ chi tiết'}. Vui lòng kiểm tra lại API Key và kết nối mạng.`; throw new Error(errorMessage); }
                 const data = await response.json();
-                console.log(`Phản hồi từ ${modelName}:`, data); // Log tên model
-
-                 if (!data.candidates || data.candidates.length === 0) {
-                     const blockReason = data?.promptFeedback?.blockReason;
-                     const safetyRatings = data?.promptFeedback?.safetyRatings;
-                     console.error("AI Response Blocked/Empty:", blockReason, safetyRatings);
-                     throw new Error(`Phản hồi từ AI bị chặn hoặc trống. Lý do: ${blockReason || 'Không rõ'}. Hãy thử thay đổi prompt hoặc kiểm tra cài đặt an toàn.`);
-                 }
-
+                console.log(`Phản hồi từ ${modelName}:`, data);
+                 if (!data.candidates || data.candidates.length === 0) { const blockReason = data?.promptFeedback?.blockReason; const safetyRatings = data?.promptFeedback?.safetyRatings; console.error("AI Response Blocked/Empty:", blockReason, safetyRatings); throw new Error(`Phản hồi từ AI bị chặn hoặc trống. Lý do: ${blockReason || 'Không rõ'}. Hãy thử thay đổi prompt hoặc kiểm tra cài đặt an toàn.`); }
                  const aiTextResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text || "AI không đưa ra phản hồi văn bản.";
                  console.log("Nội dung AI trả về:", aiTextResponse);
-
                  let lowerResponse = aiTextResponse.toLowerCase();
                  let isCorrect = false;
                  if (lowerResponse.startsWith("đánh giá: đúng") || lowerResponse.startsWith("đánh giá tổng thể: đúng")) { isCorrect = true; }
-
                  let explanation = aiTextResponse;
                  if (isCorrect && explanation.length > 100) { explanation = explanation.split('.')[0] + '.'; if (!explanation.toLowerCase().startsWith("đánh giá")) { explanation = (currentPart === 1 ? "Đánh giá: Đúng. Câu sử dụng tốt." : "Đánh giá tổng thể: Đúng. Tất cả đều phù hợp."); } }
-
                  return { isCorrect, explanation };
-
-            } catch (error) {
-                console.error(`Lỗi khi gọi ${modelName} API:`, error); // Log tên model khi lỗi
-                currentFeedbackEl.textContent = error.message;
-                currentFeedbackSectionEl.className = 'incorrect';
-                currentFeedbackSectionEl.style.display = 'block';
-                throw error;
-            }
+            } catch (error) { console.error(`Lỗi khi gọi ${modelName} API:`, error); currentFeedbackEl.textContent = error.message; currentFeedbackSectionEl.className = 'incorrect'; currentFeedbackSectionEl.style.display = 'block'; throw error; }
         }
 
-
-        // --- Các hàm khác (Timer, UI, Hint, Tooltip, Game Logic, Summary, Init) không thay đổi logic cốt lõi ---
+        // --- Các hàm khác (Timer, UI, Hint, Tooltip, Game Logic, Summary, Init) ---
         // --- Timer Functions ---
         function startTimer() { startTime = Date.now(); if(timerInterval) clearInterval(timerInterval); timerInterval = setInterval(updateTimer, 1000); updateTimer(); }
         function updateTimer() { const currentTimerEl = timerEl(); if (!currentTimerEl) { if (timerInterval) clearInterval(timerInterval); return; } const elapsedTime = Math.floor((Date.now() - startTime) / 1000); const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0'); const seconds = (elapsedTime % 60).toString().padStart(2, '0'); currentTimerEl.textContent = `${minutes}:${seconds}`; gameResults.totalTime = `${minutes}:${seconds}`; }
@@ -175,11 +156,36 @@
         function loadPart2() { currentPart = 2; setInstructions("Phần 2: Điền từ vào chỗ trống. Hãy đọc kỹ đoạn văn và điền từ thích hợp nhé. Click vào <span class='new-word' data-key='placeholder' style='color:red; font-weight:bold;'>từ màu đỏ</span> để xem nghĩa! 😉"); clearFeedback(); clearHint(); currentHintIndex = 0; const currentgameAreaEl = gameAreaEl(); const currentNextButtonEl = nextButtonEl(); const currentHintButtonEl = hintButtonEl(); if(!currentgameAreaEl || !paragraphData || !paragraphData.text) { console.error("Game area or paragraph data missing for Part 2."); return; } let paragraphHtml = paragraphData.text; if(paragraphData.blanks > 0){ for (let i = 1; i <= paragraphData.blanks; i++) { paragraphHtml = paragraphHtml.replace(`{blank${i}}`, `<input type="text" class="blank-input" id="blank-${i}" data-blank-id="${i}">`); } } else { console.warn("No blanks specified in paragraphData."); } currentgameAreaEl.innerHTML = ` <div class="paragraph-container">${paragraphHtml}</div> <button id="submit-paragraph">Kiểm tra bài điền từ ✅</button> `; document.querySelectorAll('.new-word').forEach(wordEl => { const key = wordEl.getAttribute('data-key'); if (key && key !== 'placeholder') { wordEl.addEventListener('click', (event) => { showTooltip(event.target, key); event.stopPropagation(); }); } }); const submitParaBtn = getEl('submit-paragraph'); if(submitParaBtn) { submitParaBtn.addEventListener('click', handleSubmitParagraph); } else { console.error("Submit paragraph button not found after creation."); } if(currentNextButtonEl) currentNextButtonEl.classList.add('hidden'); if(currentHintButtonEl) currentHintButtonEl.classList.remove('hidden'); }
         async function handleSubmitParagraph() { const answers = []; let allFilled = true; const blankInputs = document.querySelectorAll('.blank-input'); if(blankInputs.length === 0) { console.warn("No blank input fields found to check."); return; } blankInputs.forEach((inputEl) => { const answer = inputEl.value.trim(); answers.push(answer); if (!answer) { allFilled = false; inputEl.style.borderBottomColor = 'red'; } else { inputEl.style.borderBottomColor = '#4682b4'; } }); if (!allFilled) { showFeedback(false, "Bạn ơi, còn chỗ trống chưa điền kìa! 😮"); return; } const submitButton = getEl('submit-paragraph'); if (!submitButton) return; submitButton.disabled = true; submitButton.textContent = "AI đang chấm điểm..."; clearFeedback(); let paragraphForAI = paragraphData.text; try { if(paragraphData.blanks > 0) { for (let i = 1; i <= paragraphData.blanks; i++) { paragraphForAI = paragraphForAI.replace(new RegExp(`\\{blank${i}\\}`, 'g'), `[BLANK_${i}]`); } } paragraphForAI = paragraphForAI.replace(/<span[^>]*>/g, '').replace(/<\/span>/g, ''); } catch (error) { console.error("Error processing paragraph text for AI:", error); showFeedback(false, "Lỗi xử lý đoạn văn."); submitButton.disabled = false; submitButton.textContent = "Kiểm tra lại ✅"; return; } const relevantNewWords = Object.entries(paragraphData.newWords || {}).filter(([key, data]) => paragraphData.text.includes(`data-key='${key}'`)).map(([key, data]) => `${data.hanzi} (${data.pinyin}): ${data.meaning}`).join('; '); const prompt = `Đánh giá các từ học sinh điền vào đoạn văn tiếng Trung sau. Đoạn văn (chỗ trống là [BLANK_X]): "${paragraphForAI}" Từ học sinh điền (thứ tự BLANK_1, 2,...): ${answers.join(' | ')} Chỉ trả lời theo 1 trong 2 dạng sau ĐÚNG HOÀN TOÀN: 1. Nếu TẤT CẢ đều đúng và phù hợp: Trả lời duy nhất "Đánh giá: Đúng. Tất cả đều phù hợp." 2. Nếu có ít nhất MỘT lỗi: Trả lời "Đánh giá: Sai." và ngay sau đó liệt kê NGẮN GỌN lỗi ở từng vị trí [BLANK_X] (ví dụ: "[BLANK_1]: Sai, nên dùng 'từ khác'. [BLANK_3]: Không hợp lý."). KHÔNG giải thích dài dòng hay phân tích các phần đúng nếu có lỗi.`; let isCorrect = false; let explanation = "Có lỗi xảy ra khi kiểm tra."; const joinedAnswers = answers.join('; '); try { const aiResult = await callAI(prompt); isCorrect = aiResult.isCorrect; explanation = aiResult.explanation; showFeedback(isCorrect, explanation); recordResult(isCorrect, 2, joinedAnswers, isCorrect ? '' : explanation); if (isCorrect) { stopTimer(); showSummary(); submitButton.classList.add('hidden'); hintButtonEl()?.classList.add('hidden'); } else { submitButton.disabled = false; submitButton.textContent = "Kiểm tra lại ✅"; } } catch (error) { if (!feedbackSectionEl()?.textContent) { showFeedback(false, `Lỗi khi kiểm tra: ${error.message}`); } submitButton.disabled = false; submitButton.textContent = "Kiểm tra lại ✅"; recordResult(false, 2, joinedAnswers, `Lỗi API: ${error.message}`); } }
 
+         // --- Hàm mới để gửi kết quả lên Google Form ---
+         function submitResultsToGoogleForm() {
+             console.log("Preparing results for Google Form submission...");
+             if (GOOGLE_FORM_ACTION_URL === "https://docs.google.com/forms/d/e/YOUR_FORM_ID_HERE/formResponse" || !GOOGLE_FORM_ACTION_URL) { alert("Lỗi cấu hình: Chưa đặt URL action cho Google Form trong mã JavaScript (GOOGLE_FORM_ACTION_URL)."); console.error("GOOGLE_FORM_ACTION_URL is not configured."); return; }
+             if (STUDENT_NAME_ENTRY_ID === "entry.XXXXXXXXXX" /* Placeholder check */) { alert("Lỗi cấu hình: Chưa đặt đủ các Entry ID cho Google Form trong mã JavaScript."); console.error("Google Form Entry IDs are not configured."); return; }
+             const nameValue = playerName || "Ẩn danh";
+             const timeValue = gameResults.totalTime || "N/A";
+             const correctValue = gameResults.correct !== undefined ? gameResults.correct : "N/A";
+             const incorrectValue = gameResults.incorrect !== undefined ? gameResults.incorrect : "N/A";
+             const errorsString = (gameResults.errors && gameResults.errors.length > 0) ? gameResults.errors.map((err, index) => `${index + 1}. Phần ${err.part}: ${err.issue}\n   (Input: ${err.input || 'N/A'})`).join('\n\n') : "Không có lỗi sai.";
+             const formData = new URLSearchParams();
+             formData.append(STUDENT_NAME_ENTRY_ID, nameValue);
+             formData.append(TOTAL_TIME_ENTRY_ID, timeValue);
+             formData.append(CORRECT_COUNT_ENTRY_ID, correctValue.toString());
+             formData.append(INCORRECT_COUNT_ENTRY_ID, incorrectValue.toString());
+             formData.append(ERRORS_LIST_ENTRY_ID, errorsString);
+             const finalUrl = `${GOOGLE_FORM_ACTION_URL}?${formData.toString()}`;
+             console.log("Submitting to Google Form URL:", finalUrl);
+             console.log("Data:", { name: nameValue, time: timeValue, correct: correctValue, incorrect: incorrectValue, errors: errorsString });
+             try { const formWindow = window.open(finalUrl, '_blank'); if (!formWindow || formWindow.closed || typeof formWindow.closed == 'undefined') { alert("Trình duyệt có thể đã chặn cửa sổ mới. Vui lòng cho phép popup và thử lại, hoặc sao chép link sau và mở thủ công:\n\n" + finalUrl); } else { alert("Đã mở tab Google Form với kết quả của bạn. Vui lòng kiểm tra và nhấn 'Gửi' (Submit) trên trang đó nhé!"); } } catch (e) { console.error("Error opening Google Form:", e); alert("Không thể tự động mở Google Form. Vui lòng sao chép link sau và mở thủ công:\n\n" + finalUrl); }
+             const submitButton = getEl('submit-report-button');
+             if (submitButton) { submitButton.disabled = true; submitButton.textContent = "Đã Mở Form ✅"; submitButton.style.backgroundColor = '#6c757d'; }
+         }
+
+
         // --- Summary Page ---
-        function showSummary() { const currentgameContainerEl = gameContainerEl(); const currentsummaryPageEl = summaryPageEl(); if (!currentgameContainerEl || !currentsummaryPageEl) return; currentgameContainerEl.classList.add('hidden'); currentsummaryPageEl.style.display = 'block'; currentsummaryPageEl.classList.remove('hidden'); const summaryTimeEl = getEl('summary-time'); const summaryCorrectEl = getEl('summary-correct'); const summaryIncorrectEl = getEl('summary-incorrect'); const errorsListEl = getEl('summary-errors'); const restartButton = getEl('restart-button'); if(summaryTimeEl) summaryTimeEl.textContent = gameResults.totalTime || 'N/A'; if(summaryCorrectEl) summaryCorrectEl.textContent = gameResults.correct || 0; if(summaryIncorrectEl) summaryIncorrectEl.textContent = gameResults.incorrect || 0; if(errorsListEl) { errorsListEl.innerHTML = ''; if (gameResults.errors && gameResults.errors.length > 0) { gameResults.errors.forEach(err => { const li = document.createElement('li'); const shortInput = err.input && err.input.length > 100 ? err.input.substring(0, 97) + '...' : err.input; li.innerHTML = `<strong>Phần ${err.part}:</strong> ${err.issue} <br><small>(Input: ${shortInput || 'N/A'})</small>`; errorsListEl.appendChild(li); }); } else { errorsListEl.innerHTML = '<li>Chúc mừng! Bạn không mắc lỗi nào cả! ✨</li>'; } } else { console.error("Error list element not found in summary page."); } if (restartButton && !restartButton.dataset.listenerAttached) { restartButton.addEventListener('click', initGame); restartButton.dataset.listenerAttached = 'true'; } else if (!restartButton) { console.error("Restart button not found in summary page."); } }
+        function showSummary() { const currentgameContainerEl = gameContainerEl(); const currentsummaryPageEl = summaryPageEl(); if (!currentgameContainerEl || !currentsummaryPageEl) return; currentgameContainerEl.classList.add('hidden'); currentsummaryPageEl.style.display = 'block'; currentsummaryPageEl.classList.remove('hidden'); const summaryPlayerNameEl = getEl('summary-player-name'); const summaryTimeEl = getEl('summary-time'); const summaryCorrectEl = getEl('summary-correct'); const summaryIncorrectEl = getEl('summary-incorrect'); const errorsListEl = getEl('summary-errors'); const restartButton = getEl('restart-button'); if(summaryPlayerNameEl) summaryPlayerNameEl.textContent = playerName || "Ẩn danh"; if(summaryTimeEl) summaryTimeEl.textContent = gameResults.totalTime || 'N/A'; if(summaryCorrectEl) summaryCorrectEl.textContent = gameResults.correct || 0; if(summaryIncorrectEl) summaryIncorrectEl.textContent = gameResults.incorrect || 0; if(errorsListEl) { errorsListEl.innerHTML = ''; if (gameResults.errors && gameResults.errors.length > 0) { gameResults.errors.forEach(err => { const li = document.createElement('li'); const shortInput = err.input && err.input.length > 100 ? err.input.substring(0, 97) + '...' : err.input; li.innerHTML = `<strong>Phần ${err.part}:</strong> ${err.issue} <br><small>(Input: ${shortInput || 'N/A'})</small>`; errorsListEl.appendChild(li); }); } else { errorsListEl.innerHTML = '<li>Chúc mừng! Bạn không mắc lỗi nào cả! ✨</li>'; } } else { console.error("Error list element not found in summary page."); } const submitReportButton = getEl('submit-report-button'); if (submitReportButton) { submitReportButton.disabled = false; submitReportButton.textContent = "Nộp Báo Cáo Lên Google Form 📋"; submitReportButton.style.backgroundColor = '#28a745'; submitReportButton.onclick = submitResultsToGoogleForm; } else { console.error("Submit report button not found in summary page."); } if (restartButton && !restartButton.dataset.listenerAttached) { restartButton.addEventListener('click', initGame); restartButton.dataset.listenerAttached = 'true'; } else if (!restartButton) { console.error("Restart button not found in summary page."); } }
 
         // --- Initialization ---
-        function initGame() { console.log("Initializing game with Gemini Flash AI..."); currentPart = 0; gameResults = { correct: 0, incorrect: 0, errors: [], totalTime: '00:00' }; if (timerInterval) clearInterval(timerInterval); timerInterval = null; const currentTimerEl = timerEl(); if(currentTimerEl) currentTimerEl.textContent = '00:00'; const currentgameContainerEl = gameContainerEl(); const currentsummaryPageEl = summaryPageEl(); const currentgameAreaEl = gameAreaEl(); const currentNextButtonEl = nextButtonEl(); if(currentgameContainerEl) currentgameContainerEl.classList.remove('hidden'); if(currentsummaryPageEl) currentsummaryPageEl.style.display = 'none'; if(currentgameAreaEl) currentgameAreaEl.innerHTML = ''; clearFeedback(); clearHint(); if(currentNextButtonEl) currentNextButtonEl.classList.add('hidden'); try { loadPart1(); startTimer(); } catch (error) { console.error("Error during game initialization:", error); setInstructions("Đã xảy ra lỗi khi khởi tạo trò chơi. Vui lòng thử tải lại trang."); if(currentgameAreaEl) currentgameAreaEl.innerHTML = `<p style='color:red;'>Lỗi: ${error.message}</p>`; return; } const currentHintButtonEl = hintButtonEl(); if (currentHintButtonEl && !currentHintButtonEl.dataset.listenerAttached) { currentHintButtonEl.addEventListener('click', showHint); currentHintButtonEl.dataset.listenerAttached = 'true'; } else if (currentHintButtonEl) { currentHintButtonEl.classList.remove('hidden'); currentHintButtonEl.disabled = false; } else { console.warn("Hint button not found during init."); } hideTooltip(); }
+        function initGame() { console.log("Initializing game with Gemini Flash AI + Google Form Integration..."); currentPart = 0; gameResults = { correct: 0, incorrect: 0, errors: [], totalTime: '00:00' }; playerName = ""; if (timerInterval) clearInterval(timerInterval); timerInterval = null; const currentTimerEl = timerEl(); if(currentTimerEl) currentTimerEl.textContent = '00:00'; const currentgameContainerEl = gameContainerEl(); const currentsummaryPageEl = summaryPageEl(); const currentgameAreaEl = gameAreaEl(); const currentNextButtonEl = nextButtonEl(); const currentInstructionsEl = instructionsEl(); if(currentgameContainerEl) currentgameContainerEl.classList.remove('hidden'); if(currentsummaryPageEl) currentsummaryPageEl.style.display = 'none'; if(currentgameAreaEl) currentgameAreaEl.innerHTML = ''; clearFeedback(); clearHint(); if(currentNextButtonEl) currentNextButtonEl.classList.add('hidden'); hideTooltip(); if (currentInstructionsEl) currentInstructionsEl.innerHTML = '<p>👋 Chào bạn! Vui lòng nhập tên để bắt đầu.</p>'; if (currentgameAreaEl) { currentgameAreaEl.innerHTML = ` <div id="player-info" style="margin-bottom: 15px; padding: 20px; background-color: #e0f7fa; border-radius: 8px;"> <label for="player-name" style="display: block; margin-bottom: 8px; font-weight: bold;">Tên của bạn:</label> <input type="text" id="player-name" placeholder="Nhập tên của bạn..." required style="width: calc(100% - 22px); padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px;"> <button id="start-game-button" style="padding: 10px 20px;">Bắt đầu chơi!</button> </div> `; const startButton = getEl('start-game-button'); const playerNameInput = getEl('player-name'); if (startButton && playerNameInput) { playerNameInput.addEventListener('keypress', function(event) { if (event.key === 'Enter') { event.preventDefault(); startButton.click(); } }); startButton.addEventListener('click', () => { const name = playerNameInput.value.trim(); if (!name) { alert("Vui lòng nhập tên của bạn!"); return; } playerName = name; console.log("Player Name:", playerName); loadPart1(); startTimer(); }); } else { console.error("Không tìm thấy nút bắt đầu hoặc ô nhập tên."); } } else { console.error("Game area element not found for player info."); } const currentHintButtonEl = hintButtonEl(); if (currentHintButtonEl && !currentHintButtonEl.dataset.listenerAttached) { currentHintButtonEl.addEventListener('click', showHint); currentHintButtonEl.dataset.listenerAttached = 'true'; } else if (currentHintButtonEl) { currentHintButtonEl.classList.remove('hidden'); currentHintButtonEl.disabled = false; } else { console.warn("Hint button not found during init."); } }
 
         // ----- START GAME -----
         document.addEventListener('DOMContentLoaded', initGame);
