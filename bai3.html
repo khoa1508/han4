@@ -165,7 +165,7 @@
              if (!currentFeedbackEl || !currentFeedbackSectionEl) { console.error("Feedback elements not found!"); return { isCorrect: false, explanation: "Lỗi giao diện: Không tìm thấy vùng hiển thị phản hồi." }; }
 
              if (purpose !== 'Generate Hint') { // Chỉ hiện loading nếu không phải đang tạo gợi ý
-                currentFeedbackEl.textContent = "🧠 Gemini Flash AI đang suy nghĩ...";
+                currentFeedbackEl.textContent = "🧠 AI đang suy nghĩ...";
                 currentFeedbackSectionEl.className = 'info';
                 currentFeedbackSectionEl.style.display = 'block';
              }
