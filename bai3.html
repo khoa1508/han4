@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Tiếng Trung Mới 🐼 (Gemini Flash + Google Form Auto)</title>
+    <style>
+        /* ----- CSS không đổi ----- */
+        body { font-family: sans-serif; line-height: 1.6; background-color: #f0f8ff; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; margin: 0; }
+        #game-container { background-color: #ffffff; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); max-width: 800px; width: 100%; text-align: center; box-sizing: border-box; }
+        h1 { color: #ff6347; margin-top: 0; }
+        #timer-section { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #4682b4; }
+        #instructions p { background-color: #e0f7fa; border-left: 5px solid #00bcd4; padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: left; }
+        #game-area { margin-bottom: 20px; text-align: left; }
+        #current-word-area { margin-bottom: 20px; padding: 15px; background-color: #fffacd; border-radius: 8px; text-align: center; }
+        #current-word-hanzi { font-size: 1.8em; font-weight: bold; display: block; margin-bottom: 5px;}
+        #current-word-pinyin { font-size: 1.1em; color: grey; display: block;}
+        #current-word-meaning { font-size: 1em; color: #555; display: block; margin-top: 5px; font-style: italic;} /* Hiển thị nghĩa */
+        #sentence-input { box-sizing: border-box; width: 100%; padding: 15px; font-size: 1.1em; border: 1px solid #ccc; border-radius: 5px; min-height: 80px; margin-bottom: 15px; display: block; }
+        .paragraph-container { font-size: 1.2em; line-height: 1.8; margin-bottom: 20px; background-color: #f8f8f8; padding: 20px; border-radius: 8px; border: 1px solid #eee; text-align: left; }
+        .blank-input { width: auto; min-width: 50px; border: none; border-bottom: 2px solid #4682b4; padding: 2px 5px; font-size: 1em; text-align: center; margin: 0 3px; background-color: transparent; vertical-align: baseline; }
+        .new-word { color: red; font-weight: bold; cursor: pointer; position: relative; }
+        .tooltip { display: none; position: absolute; background-color: #333; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.9em; z-index: 10; white-space: normal; max-width: 250px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); text-align: left; }
+        .tooltip span { display: block; margin-bottom: 3px; }
+        .tooltip span:last-child { margin-bottom: 0; }
+        #hint-section { margin-bottom: 20px; }
+        #hint-text { color: #6a5acd; font-style: italic; min-height: 20px; margin-top: 10px; }
+        #feedback-section { margin-top: 15px; padding: 10px; border-radius: 5px; min-height: 30px; display: none; word-wrap: break-word; text-align: left; }
+        #feedback-section.correct { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        #feedback-section.incorrect { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        #feedback-section.info { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+        button { background-color: #ff6347; color: white; border: none; padding: 12px 25px; border-radius: 25px; cursor: pointer; font-size: 1em; transition: background-color 0.3s ease, transform 0.1s ease; margin: 10px 5px 5px 5px; }
+        button:hover { background-color: #e5533d; }
+        button:active { transform: scale(0.98); }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #summary-page { background-color: #e6f7ff; padding: 30px; border-radius: 10px; margin-top: 20px; text-align: left; display: none; }
+        #summary-page h2 { text-align: center; color: #1890ff; }
+        #summary-errors { padding-left: 20px; }
+        #summary-errors li { color: #d9534f; margin-bottom: 5px; list-style: disc; }
+        #summary-errors small { color: #555; }
+        #submit-reminder { font-size: 1.25em; font-weight: bold; color: #856404; background-color: #fff3cd; padding: 15px; border-left: 6px solid #ffeeba; border-radius: 5px; margin-top: 25px; margin-bottom: 25px; text-align: center; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Ôn tập tiếng Trung cùng AI 🚀</h1>
+        <div id="timer-section">⏳ Thời gian: <span id="timer">00:00</span></div>
+        <div id="instructions"><p>💖 Chào mừng bạn! Hãy sẵn sàng chinh phục tiếng Trung nhé!</p></div>
+        <div id="game-area"></div>
+        <div id="hint-section"><button id="hint-button">💡 Gợi ý cho tôi nào!</button><p id="hint-text"></p></div>
+        <div id="feedback-section"><p id="feedback-text"></p></div>
+        <button id="next-button" class="hidden">Tiếp tục 💪</button>
+    </div>
+    <div id="tooltip" class="tooltip"><span id="tooltip-hanzi"></span><span id="tooltip-pinyin"></span><span id="tooltip-meaning"></span></div>
+    <div id="summary-page">
+        <h2>🎉 Hoàn Thành! 🎉</h2>
+        <p>Tên học viên: <span id="summary-player-name"></span></p>
+        <p>Tổng thời gian: <span id="summary-time"></span></p>
+        <p>Số câu đúng: <span id="summary-correct"></span></p>
+        <p>Số câu sai: <span id="summary-incorrect"></span></p>
+        <h3>Chi tiết lỗi sai:</h3>
+        <ul id="summary-errors"></ul>
+        <p id="submit-reminder">Các bạn nhớ ấn nộp kết quả lên Google Form nhé</p>
+        <button id="submit-report-button" style="background-color: #28a745;">Nộp Báo Cáo Lên Google Form 📋</button>
+        <button id="restart-button">Chơi lại từ đầu 🔁</button>
+    </div>
+
+    <script>
+        // ----- DỮ LIỆU TRÒ CHƠI MỚI -----
+        const vocabPart1 = [
+            { hanzi: '女士', pinyin: 'nǚshì', meaning: 'bà (xưng hô lịch sự)' },
+            { hanzi: '服务员', pinyin: 'fúwùyuán', meaning: 'nhân viên phục vụ' },
+            { hanzi: '长', pinyin: 'zhǎng', meaning: 'lớn (lên), phát triển' },
+            { hanzi: '样(子)', pinyin: 'yàng (zi)', meaning: 'dáng, dáng vẻ, hình dáng' },
+            { hanzi: '个子', pinyin: 'gèzi', meaning: 'vóc người, vóc dáng, thân hình' },
+            { hanzi: '左右', pinyin: 'zuǒyòu', meaning: 'khoảng, khoảng chừng, trên dưới, xấp xỉ' },
+            { hanzi: '戴', pinyin: 'dài', meaning: 'đeo, đội, mang (phụ kiện)' },
+            { hanzi: '着', pinyin: 'zhe', meaning: 'đang (biểu thị sự tiếp diễn của động tác hoặc trạng thái)' },
+            { hanzi: '穿', pinyin: 'chuān', meaning: 'mặc (quần áo)' },
+            { hanzi: '西服', pinyin: 'xīfú', meaning: 'âu phục, com-lê' },
+            { hanzi: '裙子', pinyin: 'qúnzi', meaning: 'váy' },
+            { hanzi: '干', pinyin: 'gàn', meaning: 'làm' },
+            { hanzi: '主持人', pinyin: 'zhǔchírén', meaning: 'người dẫn chương trình, MC' },
+            { hanzi: '主持', pinyin: 'zhǔchí', meaning: 'dẫn chương trình' },
+            { hanzi: '小伙子', pinyin: 'xiǎohuǒzi', meaning: 'chàng trai' }, // Cũng có thể là xiǎohuǒr
+            { hanzi: '扛', pinyin: 'káng', meaning: 'vác' },
+            { hanzi: '摄像机', pinyin: 'shèxiàngjī', meaning: 'máy quay phim' },
+            { hanzi: '会议厅', pinyin: 'huìyìtīng', meaning: 'phòng hội nghị, sảnh' },
+            { hanzi: '麦克风', pinyin: 'màikèfēng', meaning: 'micro' },
+            { hanzi: '讲话', pinyin: 'jiǎnghuà', meaning: 'nói, nói chuyện, phát biểu' },
+            { hanzi: '婚礼', pinyin: 'hūnlǐ', meaning: 'đám cưới, lễ cưới, hôn lễ' },
+            { hanzi: '热闹', pinyin: 'rènao', meaning: 'náo nhiệt, nhộn nhịp' },
+            { hanzi: '挂', pinyin: 'guà', meaning: 'treo' },
+            { hanzi: '灯笼', pinyin: 'dēnglong', meaning: 'đèn lồng' },
+            { hanzi: '墙', pinyin: 'qiáng', meaning: 'tường' },
+            { hanzi: '双', pinyin: 'shuāng', meaning: 'đôi, hai' },
+            { hanzi: '喜', pinyin: 'xǐ', meaning: 'hạnh phúc, vui, mừng' },
+            { hanzi: '摆', pinyin: 'bǎi', meaning: 'bày, sắp xếp' },
+            { hanzi: '新娘', pinyin: 'xīnniáng', meaning: 'cô dâu' },
+            { hanzi: '棉袄', pinyin: 'mián\'ǎo', meaning: 'áo bông' },
+            { hanzi: '新郎', pinyin: 'xīnláng', meaning: 'chú rể' },
+            { hanzi: '帅', pinyin: 'shuài', meaning: 'đẹp trai, điển trai' },
+            { hanzi: '系', pinyin: 'jì', meaning: 'thắt, buộc' },
+            { hanzi: '领带', pinyin: 'lǐngdài', meaning: 'cà vạt' },
+            { hanzi: '热情', pinyin: 'rèqíng', meaning: 'nhiệt tình, niềm nở' },
+            { hanzi: '客人', pinyin: 'kèrén', meaning: 'khách, khách khứa' },
+            { hanzi: '倒', pinyin: 'dào', meaning: 'rót, đổ, dốc' },
+            { hanzi: '停', pinyin: 'tíng', meaning: 'dừng, ngừng' },
+            { hanzi: '气氛', pinyin: 'qìfēn', meaning: 'không khí' }
+        ];
+
+        const paragraphData = {
+            text: "王老师已经好几天没有 ①{blank1} 我们上课了，因为他生病住院了。老师住院以后，我们班的学生都去医院看 ②{blank2} 他。我们都希望老师能早点儿好，因为我们觉得他是个好老师，对我们就象对自己的儿女一样。 今天早上，我 ③{blank3} 走进教室，就看见王老师在<span class='new-word' data-key='jiǎngtái'>讲台</span>旁边站 ④{blank4}。我高兴⑤{blank5} 向老师问了一声好。我问：“老师，您什么时候出院的？” “我前天出的院。听说你也病了，好 ⑥{blank6} 吗？” “好了。老师，您要<span class='new-word' data-key='bǎozhòng'>保重</span>身体！” “谢谢你！” 这时，同学们都走进教室 ⑦{blank7} 了，大家看到王老师又能给我们上课了，都很高兴。老师也高兴地和大家说 ⑧{blank8}，问每个同学的情况。我们都知道王老师刚出院，身体还不太好。 上课<span class='new-word' data-key='líng'>铃</span>响了。 大家一起大声地说：“老师好！”王老师笑 ⑨{blank9} 点了点头，也对我们说：“同学们好！” 老师拿起书要开始讲课了。山本搬了一把<span class='new-word' data-key='yǐzi'>椅子</span>，走到老师面前，说：“老师，今天请您坐 ⑩{blank10} 讲吧。” 王老师说：“谢谢，我不累，我不习惯坐着上课。”王老师没有坐。 “老师，请您坐下讲吧！”这时，<span class='new-word' data-key='bānzhǎng'>班长</span>带着全班同学一起大声地说。 王老师有点儿<span class='new-word' data-key='jīdòng'>激动</span>地看着我们说：“谢谢大家！谢谢同学们！”",
+            blanks: 10, // 10 chỗ trống
+            newWords: {
+                'jiǎngtái': { hanzi: '讲台', pinyin: 'jiǎngtái', meaning: 'bục giảng' },
+                'bǎozhòng': { hanzi: '保重', pinyin: 'bǎozhòng', meaning: 'bảo trọng, giữ gìn' },
+                'líng': { hanzi: '铃', pinyin: 'líng', meaning: 'chuông' },
+                'yǐzi': { hanzi: '椅子', pinyin: 'yǐzi', meaning: 'ghế' },
+                'bānzhǎng': { hanzi: '班长', pinyin: 'bānzhǎng', meaning: 'lớp trưởng' },
+                'jīdòng': { hanzi: '激动', pinyin: 'jīdòng', meaning: 'xúc động' }
+            },
+            hints: [ // Gợi ý cho 10 chỗ trống (bạn nên xem xét và sửa lại cho thật chính xác)
+                "Động từ, 'cho/đến' chúng tôi.", // ①
+                "Động từ, 'thăm/gặp' thầy ấy.",        // ②
+                "Phó từ, chỉ thời gian/hành động xảy ra ngay khi.", // ③
+                "Trợ từ động thái, biểu thị sự tiếp diễn.", // ④
+                "Trạng từ, chỉ mức độ của hành động 'hỏi'.", // ⑤
+                "Tính từ, hỏi thăm sức khỏe.", // ⑥
+                "Trợ từ, hoàn thành hành động.", // ⑦
+                "Động từ/Danh từ, liên quan đến việc nói chuyện.", // ⑧
+                "Trợ từ động thái, biểu thị cách thức của hành động 'cười'.", // ⑨
+                "Trợ từ động thái hoặc giới từ chỉ vị trí.", // ⑩
+            ]
+        };
+        const hintsPart1Defaults = [ "Hãy thử dùng từ '女士' để nói về một người phụ nữ một cách lịch sự.", "Dùng '热闹' để miêu tả một không khí vui vẻ, nhộn nhịp.", "Nghĩ xem '除了……以外' có thể dùng trong cấu trúc nào?", "Bạn cảm thấy thế nào ở một '婚礼' (đám cưới)?", "Làm sao để diễn tả hành động '扛' (vác) một vật nặng?" ]; // Gợi ý mặc định nếu AI lỗi
+
+        // ----- BIẾN TRẠNG THÁI GAME -----
+        let currentPart = 0; let startTime; let timerInterval;
+        let gameResults = { correct: 0, incorrect: 0, errors: [], totalTime: '00:00' };
+        let currentHintIndex = 0; let currentVocabIndexPart1 = 0; let currentTargetWordPart1 = null;
+        let playerName = "";
+
+        // ----- GOOGLE FORM CONFIGURATION (SỬ DỤNG LẠI THÔNG TIN CŨ, NẾU CẦN FORM MỚI, HÃY CUNG CẤP LẠI) -----
+        const GOOGLE_FORM_ACTION_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeBAu4nmQQX6F3wMeoEzwgCH-JFKT8e1wJ3u-yp4KANey39Fw/formResponse";
+        const STUDENT_NAME_ENTRY_ID = "entry.497915687"; const TOTAL_TIME_ENTRY_ID = "entry.1644850563"; const CORRECT_COUNT_ENTRY_ID = "entry.1575464331"; const INCORRECT_COUNT_ENTRY_ID = "entry.1038973429"; const ERRORS_LIST_ENTRY_ID = "entry.888446367";
+
+        // ----- DOM ELEMENTS -----
+        const getEl = (id) => document.getElementById(id);
+        const timerEl = () => getEl('timer'); const instructionsEl = () => getEl('instructions'); const gameAreaEl = () => getEl('game-area'); const hintButtonEl = () => getEl('hint-button'); const hintTextEl = () => getEl('hint-text'); const feedbackSectionEl = () => getEl('feedback-section'); const feedbackTextEl = () => getEl('feedback-text'); const nextButtonEl = () => getEl('next-button'); const summaryPageEl = () => getEl('summary-page'); const gameContainerEl = () => getEl('game-container'); const tooltipEl = () => getEl('tooltip');
+
+        // ----- FUNCTIONS -----
+
+        // --- AI Integration (Google Gemini Flash) ---
+        async function callAI(prompt) {
+            const currentFeedbackEl = feedbackTextEl(); const currentFeedbackSectionEl = feedbackSectionEl();
+            let purpose = "Unknown";
+            if (currentPart === 1) purpose = "Check Sentence";
+            else if (currentPart === 2) purpose = prompt.includes("tạo một gợi ý") ? 'Generate Hint' : 'Check Paragraph';
+
+            console.log(`--- Gọi AI (Gemini Flash) với prompt (${purpose}) ---`);
+            console.log(prompt);
+
+             if (!currentFeedbackEl || !currentFeedbackSectionEl) { console.error("Feedback elements not found!"); return { isCorrect: false, explanation: "Lỗi giao diện: Không tìm thấy vùng hiển thị phản hồi." }; }
+
+             if (purpose !== 'Generate Hint') { // Chỉ hiện loading nếu không phải đang tạo gợi ý
+                currentFeedbackEl.textContent = "🧠 Gemini Flash AI đang suy nghĩ...";
+                currentFeedbackSectionEl.className = 'info';
+                currentFeedbackSectionEl.style.display = 'block';
+             }
+
+            const apiKey = 'AIzaSyBvdzFJAA8xSTMZ17nse19boON9zGopUyU'; // Cảnh báo bảo mật vẫn áp dụng
+            const modelName = 'gemini-1.5-flash-latest';
+            const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+            const generationConfig = { temperature: 0.5, maxOutputTokens: 300, };
+            const safetySettings = [ { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }, ]; // Nới lỏng safety settings
+
+            try {
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', },
+                    body: JSON.stringify({ contents: [{ parts: [{ "text": prompt }] }], generationConfig: generationConfig, safetySettings: safetySettings }),
+                });
+                if (!response.ok) { let errorData; try { errorData = await response.json(); console.error("Lỗi API (JSON):", errorData); } catch (e) { const errorText = await response.text(); console.error("Lỗi API (Text):", errorText); errorData = { error: { message: errorText || 'Không đọc được lỗi' } }; } const errorMessage = `Lỗi API ${response.status}: ${errorData?.error?.message || response.statusText || 'Không rõ chi tiết'}. Vui lòng kiểm tra lại API Key và kết nối mạng.`; throw new Error(errorMessage); }
+                const data = await response.json();
+                console.log(`Phản hồi từ ${modelName}:`, data);
+
+                 if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content || !data.candidates[0].content.parts || data.candidates[0].content.parts.length === 0) {
+                     const blockReason = data?.promptFeedback?.blockReason || "Không có ứng viên trả về";
+                     const safetyRatings = data?.promptFeedback?.safetyRatings;
+                     console.error("AI Response Blocked/Empty:", blockReason, safetyRatings);
+                     throw new Error(`Phản hồi từ AI bị chặn hoặc trống. Lý do: ${blockReason}. Hãy thử thay đổi prompt hoặc kiểm tra cài đặt an toàn.`);
+                 }
+
+                 const aiTextResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text || "AI không đưa ra phản hồi văn bản.";
+                 console.log("Nội dung AI trả về:", aiTextResponse);
+
+                  if (purpose === 'Generate Hint') { return { explanation: aiTextResponse }; }
+                  else {
+                        let lowerResponse = aiTextResponse.toLowerCase(); let isCorrect = false;
+                        if (currentPart === 1 && lowerResponse.startsWith("đánh giá: đúng")) { isCorrect = true; }
+                        else if (currentPart === 2 && (lowerResponse.startsWith("đánh giá: đúng") || lowerResponse.startsWith("đánh giá tổng thể: đúng"))) { isCorrect = true; }
+                        let explanation = aiTextResponse;
+                        if (isCorrect && explanation.length > 100 && (explanation.includes("phân tích") || explanation.includes("giải thích"))) { // Cố gắng rút gọn hơn nếu vẫn dài dòng
+                             explanation = (currentPart === 1 ? "Đánh giá: Đúng. Câu sử dụng tốt." : "Đánh giá: Đúng. Tất cả đều phù hợp.");
+                        } else if (isCorrect && explanation.length > 100) { // Nếu không có từ khóa phân tích nhưng vẫn dài
+                             explanation = explanation.split('.')[0] + '.';
+                             if(!explanation.toLowerCase().startsWith("đánh giá")) {
+                                  explanation = (currentPart === 1 ? "Đánh giá: Đúng. Câu sử dụng tốt." : "Đánh giá: Đúng. Tất cả đều phù hợp.");
+                             }
+                        }
+                        return { isCorrect, explanation };
+                  }
+            } catch (error) {
+                console.error(`Lỗi khi gọi ${modelName} API:`, error);
+                if (purpose === 'Generate Hint') { hintTextEl().textContent = "Lỗi: Không thể tạo gợi ý từ AI."; hintButtonEl().disabled = false; return { explanation: "Lỗi tạo gợi ý." }; }
+                else { currentFeedbackEl.textContent = error.message; currentFeedbackSectionEl.className = 'incorrect'; currentFeedbackSectionEl.style.display = 'block'; throw error; }
+            }
+        }
+
+        // --- Timer Functions ---
+        function startTimer() { startTime = Date.now(); if(timerInterval) clearInterval(timerInterval); timerInterval = setInterval(updateTimer, 1000); updateTimer(); }
+        function updateTimer() { const currentTimerEl = timerEl(); if (!currentTimerEl) { if (timerInterval) clearInterval(timerInterval); return; } const elapsedTime = Math.floor((Date.now() - startTime) / 1000); const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0'); const seconds = (elapsedTime % 60).toString().padStart(2, '0'); currentTimerEl.textContent = `${minutes}:${seconds}`; gameResults.totalTime = `${minutes}:${seconds}`; }
+        function stopTimer() { if(timerInterval) clearInterval(timerInterval); timerInterval = null; }
+
+        // --- UI and Feedback ---
+        function setInstructions(text) { const currentInstructionsEl = instructionsEl(); if (currentInstructionsEl) currentInstructionsEl.innerHTML = `<p>💖 ${text}</p>`; }
+        function showFeedback(isCorrect, message) { const currentFeedbackSectionEl = feedbackSectionEl(); const currentFeedbackTextEl = feedbackTextEl(); if (!currentFeedbackSectionEl || !currentFeedbackTextEl) return; currentFeedbackTextEl.textContent = message; currentFeedbackSectionEl.className = isCorrect ? 'correct' : 'incorrect'; currentFeedbackSectionEl.style.display = 'block'; }
+        function recordResult(isCorrect, part, input, issue) { if (isCorrect) { gameResults.correct++; } else { gameResults.incorrect++; gameResults.errors.push({ part, input: input || 'N/A', issue }); } console.log("Game Results Updated:", JSON.stringify(gameResults)); }
+        function clearFeedback() { const currentFeedbackSectionEl = feedbackSectionEl(); const currentFeedbackTextEl = feedbackTextEl(); if (!currentFeedbackSectionEl || !currentFeedbackTextEl) return; currentFeedbackTextEl.textContent = ''; currentFeedbackSectionEl.style.display = 'none'; currentFeedbackSectionEl.className = ''; }
+        async function showHint() {
+            const currentHintTextEl = hintTextEl(); const currentHintButtonEl = hintButtonEl();
+             if (!currentHintTextEl || !currentHintButtonEl) return;
+             currentHintButtonEl.disabled = true; currentHintTextEl.textContent = "🧠 AI đang tạo gợi ý...";
+            let hint = "Không có gợi ý nào cho phần này.";
+             try {
+                 if (currentPart === 1 && currentTargetWordPart1) {
+                    // Lấy gợi ý mặc định hoặc tạo từ AI nếu muốn
+                    const defaultHintsForWord1 = hintsPart1Defaults.filter(h => h.includes(currentTargetWordPart1.hanzi));
+                    hint = defaultHintsForWord1.length > 0 ? defaultHintsForWord1[0] : `Hãy thử đặt một câu hoàn chỉnh với từ "${currentTargetWordPart1.hanzi}" (${currentTargetWordPart1.pinyin}) có nghĩa là "${currentTargetWordPart1.meaning}".`;
+                    currentHintTextEl.textContent = hint; currentHintButtonEl.disabled = false;
+                }
+                 else if (currentPart === 2) {
+                      const blanks = document.querySelectorAll('.blank-input'); let firstEmptyIndex = -1;
+                      blanks.forEach((input, index) => { if (input.value.trim() === '' && firstEmptyIndex === -1) { firstEmptyIndex = index; } });
+                      if (firstEmptyIndex !== -1) {
+                           const blankNumber = firstEmptyIndex + 1; console.log(`Requesting hint for blank ${blankNumber}`);
+                           let paragraphForHint = paragraphData.text;
+                           paragraphForHint = paragraphForHint.replace(`{blank${blankNumber}}`, `[GỢI_Ý_CHO_Ô_NÀY]`);
+                           for (let i = 1; i <= paragraphData.blanks; i++) { if (i !== blankNumber) { const filledValue = getEl(`blank-${i}`)?.value.trim(); paragraphForHint = paragraphForHint.replace(`{blank${i}}`, filledValue ? `(${filledValue})` : `[BLANK_${i}]`); } }
+                           paragraphForHint = paragraphForHint.replace(/<span[^>]*>/g, '').replace(/<\/span>/g, '');
+                           const hintPrompt = `Là một trợ lý tiếng Trung, hãy tạo một gợi ý NGẮN GỌN (tối đa 15 từ tiếng Việt) cho người học điền vào chỗ trống "[GỢI_Ý_CHO_Ô_NÀY]" trong đoạn văn sau. Gợi ý cần tập trung vào nghĩa hoặc loại từ cần điền, không tiết lộ đáp án.\nĐoạn văn: "${paragraphForHint}"\nChỉ cung cấp nội dung gợi ý bằng tiếng Việt.`;
+                           const aiResult = await callAI(hintPrompt);
+                           hint = aiResult.explanation || "Không thể tạo gợi ý lúc này.";
+                           currentHintTextEl.textContent = hint; currentHintButtonEl.disabled = false;
+                      } else { hint = "Bạn làm tốt lắm, không cần gợi ý nữa đâu! 😉"; currentHintTextEl.textContent = hint; currentHintButtonEl.disabled = false; }
+                 } else { currentHintTextEl.textContent = hint; currentHintButtonEl.disabled = false; }
+             } catch (error) { console.error("Lỗi khi tạo gợi ý:", error); hint = "Đã xảy ra lỗi khi lấy gợi ý từ AI."; currentHintTextEl.textContent = hint; currentHintButtonEl.disabled = false; }
+        }
+        function clearHint() { const currentHintTextEl = hintTextEl(); if (currentHintTextEl) currentHintTextEl.textContent = ''; }
+
+        // --- Tooltip Logic ---
+        function showTooltip(element, key) { const currentTooltipEl = tooltipEl(); if (!currentTooltipEl || !paragraphData || !paragraphData.newWords) return; const wordData = paragraphData.newWords[key]; if (!wordData) return; const hanziEl = currentTooltipEl.querySelector('#tooltip-hanzi'); const pinyinEl = currentTooltipEl.querySelector('#tooltip-pinyin'); const meaningEl = currentTooltipEl.querySelector('#tooltip-meaning'); if(hanziEl) hanziEl.textContent = element.textContent; if(pinyinEl) pinyinEl.textContent = `Pinyin: ${wordData.pinyin || 'N/A'}`; if(meaningEl) meaningEl.textContent = `Nghĩa: ${wordData.meaning || 'N/A'}`; const rect = element.getBoundingClientRect(); let top = rect.bottom + window.scrollY + 5; let left = rect.left + window.scrollX; currentTooltipEl.style.display = 'block'; currentTooltipEl.style.left = `0px`; currentTooltipEl.style.top = `0px`; const tooltipRect = currentTooltipEl.getBoundingClientRect(); left = rect.left + window.scrollX + (rect.width / 2) - (tooltipRect.width / 2); top = rect.bottom + window.scrollY + 8; if (top + tooltipRect.height > window.innerHeight + window.scrollY) { top = rect.top + window.scrollY - tooltipRect.height - 8; } if (left + tooltipRect.width > window.innerWidth) { left = window.innerWidth - tooltipRect.width - 10; } if (left < 0) { left = 10; } if (top < window.scrollY) { top = window.scrollY + 10; } currentTooltipEl.style.left = `${left}px`; currentTooltipEl.style.top = `${top}px`; document.removeEventListener('click', hideTooltipOnClickOutside, true); document.addEventListener('click', hideTooltipOnClickOutside, true); }
+        function hideTooltip() { const currentTooltipEl = tooltipEl(); if (currentTooltipEl) currentTooltipEl.style.display = 'none'; document.removeEventListener('click', hideTooltipOnClickOutside, true); }
+        function hideTooltipOnClickOutside(event) { const currentTooltipEl = tooltipEl(); if (!currentTooltipEl || currentTooltipEl.contains(event.target) || event.target.classList.contains('new-word')) { return; } hideTooltip(); }
+
+        // --- Game Part Logic ---
+        function loadPart1() { currentPart = 1; setInstructions("Phần 1: Đặt câu. Hãy đặt một câu tiếng Trung tự nhiên và logic sử dụng từ dưới đây nhé! 😊"); clearFeedback(); clearHint(); currentVocabIndexPart1 = 0; currentTargetWordPart1 = null; const currentNextButtonEl = nextButtonEl(); const currentHintButtonEl = hintButtonEl(); const currentgameAreaEl = gameAreaEl(); if(currentgameAreaEl) { currentgameAreaEl.innerHTML = ` <div id="current-word-area" style="margin-bottom: 20px; padding: 15px; background-color: #fffacd; border-radius: 8px; text-align: center;"> <p><strong>Hãy đặt câu với từ:</strong></p> <span id="current-word-hanzi" style="font-size: 1.8em; font-weight: bold; display: block; margin-bottom: 5px;"></span> <span id="current-word-pinyin" style="font-size: 1.1em; color: grey; display: block;"></span> <span id="current-word-meaning" style="font-size: 1em; color: #555; display: block; margin-top: 5px; font-style: italic;"></span> </div> <textarea id="sentence-input" rows="4" placeholder="Viết câu của bạn vào đây..."></textarea> <button id="submit-sentence">Kiểm tra câu 🤔</button> `; displayCurrentVocabWord(); const submitSentenceBtn = getEl('submit-sentence'); if (submitSentenceBtn) { submitSentenceBtn.addEventListener('click', handleSubmitSentence); } else { console.error("Submit sentence button not found after creation."); } } else { console.error("Game area element not found!"); return; } if (currentNextButtonEl) currentNextButtonEl.classList.add('hidden'); if (currentHintButtonEl) currentHintButtonEl.classList.remove('hidden'); }
+        function displayCurrentVocabWord() { const currentgameAreaEl = gameAreaEl(); if (!currentgameAreaEl) return; if (vocabPart1 && currentVocabIndexPart1 < vocabPart1.length) { currentTargetWordPart1 = vocabPart1[currentVocabIndexPart1]; const hanziEl = getEl('current-word-hanzi'); const pinyinEl = getEl('current-word-pinyin'); const meaningEl = getEl('current-word-meaning'); const sentenceInputEl = getEl('sentence-input'); const submitButton = getEl('submit-sentence'); if (hanziEl && pinyinEl && meaningEl && currentTargetWordPart1) { hanziEl.textContent = currentTargetWordPart1.hanzi; pinyinEl.textContent = `(${currentTargetWordPart1.pinyin})`; meaningEl.textContent = currentTargetWordPart1.meaning; } else { console.error("Không tìm thấy element để hiển thị từ hoặc từ không hợp lệ."); return; } if(sentenceInputEl) sentenceInputEl.value = ''; if(submitButton) { submitButton.disabled = false; submitButton.textContent = "Kiểm tra câu 🤔"; submitButton.classList.remove('hidden'); } clearFeedback(); clearHint(); nextButtonEl()?.classList.add('hidden'); } else { console.log("Đã hoàn thành Phần 1. Chuyển sang Phần 2."); loadPart2(); } }
+        async function handleSubmitSentence() { const sentenceInput = getEl('sentence-input'); const sentence = sentenceInput ? sentenceInput.value.trim() : ''; if (!currentTargetWordPart1) { console.error("Không có từ mục tiêu hiện tại để kiểm tra câu."); showFeedback(false, "Lỗi: Không xác định được từ cần đặt câu."); return; } if (!sentence) { showFeedback(false, "Bạn chưa nhập câu nào cả! Vui lòng thử lại."); return; } const submitButton = getEl('submit-sentence'); const currentNextButtonEl = nextButtonEl(); if (!submitButton) { console.error("Submit button not found."); return; } submitButton.disabled = true; submitButton.textContent = "AI đang chấm điểm..."; clearFeedback(); const targetWordInfo = `${currentTargetWordPart1.hanzi} (${currentTargetWordPart1.pinyin}): ${currentTargetWordPart1.meaning}`; const prompt = `Là một giáo viên tiếng Trung, hãy đánh giá câu sau: "${sentence}". Câu này nên sử dụng từ "${targetWordInfo}". Yêu cầu: 1. Đánh giá câu là Đúng hay Sai (về ngữ pháp, logic và cách dùng từ "${currentTargetWordPart1.hanzi}"). 2. Nếu Sai: Chỉ ra NGẮN GỌN lỗi sai chính và đưa ra 1 gợi ý cải thiện câu. 3. Nếu Đúng: Chỉ cần ghi "Đánh giá: Đúng. Câu sử dụng tốt.". Hãy trả lời thật ngắn gọn, tập trung vào điểm chính.`; let isCorrect = false; let explanation = "Có lỗi xảy ra khi kiểm tra."; try { const aiResult = await callAI(prompt); isCorrect = aiResult.isCorrect; explanation = aiResult.explanation; showFeedback(isCorrect, explanation); recordResult(isCorrect, 1, `Từ: ${targetWordInfo} - Câu: ${sentence}`, isCorrect ? '' : explanation); if (isCorrect) { currentVocabIndexPart1++; setTimeout(displayCurrentVocabWord, 1500); } else { submitButton.disabled = false; submitButton.textContent = "Kiểm tra lại 🤔"; } } catch (error) { if (!feedbackSectionEl()?.textContent) { showFeedback(false, `Lỗi khi kiểm tra: ${error.message}`); } submitButton.disabled = false; submitButton.textContent = "Kiểm tra lại 🤔"; recordResult(false, 1, `Từ: ${targetWordInfo} - Câu: ${sentence}`, `Lỗi API: ${error.message}`); } }
+        function loadPart2() { currentPart = 2; setInstructions("Phần 2: Điền từ vào chỗ trống. Hãy đọc kỹ đoạn văn và điền từ thích hợp nhé. Click vào <span class='new-word' data-key='placeholder' style='color:red; font-weight:bold;'>từ màu đỏ</span> để xem nghĩa! 😉"); clearFeedback(); clearHint(); currentHintIndex = 0; const currentgameAreaEl = gameAreaEl(); const currentNextButtonEl = nextButtonEl(); const currentHintButtonEl = hintButtonEl(); if(!currentgameAreaEl || !paragraphData || !paragraphData.text) { console.error("Game area or paragraph data missing for Part 2."); return; } let paragraphHtml = paragraphData.text; if(paragraphData.blanks > 0){ for (let i = 1; i <= paragraphData.blanks; i++) { paragraphHtml = paragraphHtml.replace(`{blank${i}}`, `<input type="text" class="blank-input" id="blank-${i}" data-blank-id="${i}">`); } } else { console.warn("No blanks specified in paragraphData."); } currentgameAreaEl.innerHTML = ` <div class="paragraph-container">${paragraphHtml}</div> <button id="submit-paragraph">Kiểm tra bài điền từ ✅</button> `; document.querySelectorAll('.new-word').forEach(wordEl => { const key = wordEl.getAttribute('data-key'); if (key && key !== 'placeholder') { wordEl.addEventListener('click', (event) => { showTooltip(event.target, key); event.stopPropagation(); }); } }); const submitParaBtn = getEl('submit-paragraph'); if(submitParaBtn) { submitParaBtn.addEventListener('click', handleSubmitParagraph); } else { console.error("Submit paragraph button not found after creation."); } if(currentNextButtonEl) currentNextButtonEl.classList.add('hidden'); if(currentHintButtonEl) currentHintButtonEl.classList.remove('hidden'); }
+        async function handleSubmitParagraph() { const answers = []; let allFilled = true; const blankInputs = document.querySelectorAll('.blank-input'); if(blankInputs.length !== paragraphData.blanks) { console.warn(`Mismatch between expected blanks (${paragraphData.blanks}) and found inputs (${blankInputs.length}). Check HTML generation.`); } if(blankInputs.length === 0) { console.warn("No blank input fields found to check."); return; } blankInputs.forEach((inputEl) => { const answer = inputEl.value.trim(); answers.push(answer); if (!answer) { allFilled = false; inputEl.style.borderBottomColor = 'red'; } else { inputEl.style.borderBottomColor = '#4682b4'; } }); if (!allFilled) { showFeedback(false, "Bạn ơi, còn chỗ trống chưa điền kìa! 😮"); return; } const submitButton = getEl('submit-paragraph'); if (!submitButton) return; submitButton.disabled = true; submitButton.textContent = "AI đang chấm điểm..."; clearFeedback(); let paragraphForAI = paragraphData.text; try { if(paragraphData.blanks > 0) { for (let i = 1; i <= paragraphData.blanks; i++) { paragraphForAI = paragraphForAI.replace(new RegExp(`\\{blank${i}\\}`, 'g'), `[BLANK_${i}]`); } } paragraphForAI = paragraphForAI.replace(/<span[^>]*>/g, '').replace(/<\/span>/g, ''); } catch (error) { console.error("Error processing paragraph text for AI:", error); showFeedback(false, "Lỗi xử lý đoạn văn."); submitButton.disabled = false; submitButton.textContent = "Kiểm tra lại ✅"; return; } const relevantNewWords = Object.entries(paragraphData.newWords || {}).filter(([key, data]) => paragraphData.text.includes(`data-key='${key}'`)).map(([key, data]) => `${data.hanzi} (${data.pinyin}): ${data.meaning}`).join('; '); const prompt = `Đánh giá các từ học sinh điền vào đoạn văn tiếng Trung sau. Đoạn văn (chỗ trống là [BLANK_X]): "${paragraphForAI}" Từ học sinh điền (thứ tự BLANK_1, 2,...): ${answers.join(' | ')} Chỉ trả lời theo 1 trong 2 dạng sau ĐÚNG HOÀN TOÀN: 1. Nếu TẤT CẢ đều đúng và phù hợp: Trả lời duy nhất "Đánh giá: Đúng. Tất cả đều phù hợp." 2. Nếu có ít nhất MỘT lỗi: Trả lời "Đánh giá: Sai." và ngay sau đó liệt kê NGẮN GỌN lỗi ở từng vị trí [BLANK_X] (ví dụ: "[BLANK_1]: Sai, nên dùng 'từ khác'. [BLANK_3]: Không hợp lý."). KHÔNG giải thích dài dòng hay phân tích các phần đúng nếu có lỗi.`; let isCorrect = false; let explanation = "Có lỗi xảy ra khi kiểm tra."; const joinedAnswers = answers.join('; '); try { const aiResult = await callAI(prompt); isCorrect = aiResult.isCorrect; explanation = aiResult.explanation; showFeedback(isCorrect, explanation); recordResult(isCorrect, 2, joinedAnswers, isCorrect ? '' : explanation); if (isCorrect) { stopTimer(); showSummary(); submitButton.classList.add('hidden'); hintButtonEl()?.classList.add('hidden'); } else { submitButton.disabled = false; submitButton.textContent = "Kiểm tra lại ✅"; } } catch (error) { if (!feedbackSectionEl()?.textContent) { showFeedback(false, `Lỗi khi kiểm tra: ${error.message}`); } submitButton.disabled = false; submitButton.textContent = "Kiểm tra lại ✅"; recordResult(false, 2, joinedAnswers, `Lỗi API: ${error.message}`); } }
+
+         // --- Hàm gửi kết quả lên Google Form (TỰ ĐỘNG) ---
+         async function submitResultsToGoogleForm() { // Thêm async
+             console.log("Attempting to automatically submit results to Google Form...");
+             const submitButton = getEl('submit-report-button');
+             if (submitButton) {
+                 submitButton.disabled = true;
+                 submitButton.textContent = "Đang nộp báo cáo...";
+                 submitButton.style.backgroundColor = '#ffc107'; // Màu vàng chờ
+             }
+
+             if (GOOGLE_FORM_ACTION_URL === "https://docs.google.com/forms/d/e/YOUR_FORM_ID_HERE/formResponse" || !GOOGLE_FORM_ACTION_URL) { alert("Lỗi cấu hình: Chưa đặt URL action cho Google Form."); if(submitButton){submitButton.disabled=false; submitButton.textContent="Lỗi Cấu Hình Form"; submitButton.style.backgroundColor = '#dc3545';} return; }
+             if (STUDENT_NAME_ENTRY_ID === "entry.XXXXXXXXXX") { alert("Lỗi cấu hình: Chưa đặt Entry ID cho Google Form."); if(submitButton){submitButton.disabled=false; submitButton.textContent="Lỗi Cấu Hình Form"; submitButton.style.backgroundColor = '#dc3545';} return; }
+
+             const nameValue = playerName || "Ẩn danh";
+             const timeValue = gameResults.totalTime || "N/A";
+             const correctValue = gameResults.correct !== undefined ? gameResults.correct : "N/A";
+             const incorrectValue = gameResults.incorrect !== undefined ? gameResults.incorrect : "N/A";
+             const errorsString = (gameResults.errors && gameResults.errors.length > 0) ? gameResults.errors.map((err, index) => `${index + 1}. Phần ${err.part}: ${err.issue}\n   (Input: ${err.input || 'N/A'})`).join('\n\n') : "Không có lỗi sai.";
+
+             const formData = new FormData(); // Sử dụng FormData cho POST
+             formData.append(STUDENT_NAME_ENTRY_ID, nameValue);
+             formData.append(TOTAL_TIME_ENTRY_ID, timeValue);
+             formData.append(CORRECT_COUNT_ENTRY_ID, correctValue.toString());
+             formData.append(INCORRECT_COUNT_ENTRY_ID, incorrectValue.toString());
+             formData.append(ERRORS_LIST_ENTRY_ID, errorsString);
+
+             console.log("Submitting to Google Form URL:", GOOGLE_FORM_ACTION_URL);
+             console.log("Data:", { name: nameValue, time: timeValue, correct: correctValue, incorrect: incorrectValue, errors: errorsString });
+
+             try {
+                 // Gửi dữ liệu ẩn bằng fetch POST, không mở tab mới
+                 // mode: 'no-cors' có nghĩa là chúng ta không thể đọc response từ server Google,
+                 // nhưng request vẫn được gửi đi. Đây là cách phổ biến để submit form client-side.
+                 const response = await fetch(GOOGLE_FORM_ACTION_URL, {
+                     method: 'POST',
+                     mode: 'no-cors', // QUAN TRỌNG
+                     body: formData
+                 });
+
+                 // Vì dùng 'no-cors', chúng ta không thể kiểm tra response.status hay response.ok
+                 // Chúng ta giả định là thành công nếu không có lỗi network.
+                 console.log("Form data submitted via POST (no-cors). Success assumed.");
+                 alert("Đã tự động gửi báo cáo thành công! Cảm ơn bạn.");
+                 if (submitButton) {
+                     submitButton.textContent = "Đã Nộp Tự Động ✅";
+                     submitButton.style.backgroundColor = '#28a745'; // Màu xanh thành công
+                     // Bạn có thể giữ nút bị vô hiệu hóa hoặc làm gì đó khác
+                 }
+
+             } catch (error) {
+                 console.error("Error submitting to Google Form via POST:", error);
+                 alert("Gửi báo cáo tự động thất bại. Lỗi: " + error.message + "\nVui lòng thử lại bằng cách nhấn nút 'Nộp Báo Cáo' lần nữa (sẽ mở link) hoặc liên hệ giáo viên. Bạn có thể chụp ảnh màn hình kết quả này.");
+                 // Nếu gửi tự động lỗi, có thể fallback về cách mở link:
+                 // const fallbackUrl = `${GOOGLE_FORM_ACTION_URL}?${new URLSearchParams(Object.fromEntries(formData)).toString()}`;
+                 // window.open(fallbackUrl, '_blank');
+                 // alert("Do gửi tự động lỗi, đã mở tab Google Form. Vui lòng kiểm tra và nhấn 'Gửi' trên trang đó nhé!");
+
+                 if (submitButton) {
+                     submitButton.disabled = false; // Cho phép thử lại
+                     submitButton.textContent = "Nộp Báo Cáo (Thử lại)";
+                     submitButton.style.backgroundColor = '#dc3545'; // Màu đỏ lỗi
+                 }
+             }
+         }
+
+
+        // --- Summary Page ---
+        function showSummary() { const currentgameContainerEl = gameContainerEl(); const currentsummaryPageEl = summaryPageEl(); if (!currentgameContainerEl || !currentsummaryPageEl) return; currentgameContainerEl.classList.add('hidden'); currentsummaryPageEl.style.display = 'block'; currentsummaryPageEl.classList.remove('hidden'); const summaryPlayerNameEl = getEl('summary-player-name'); const summaryTimeEl = getEl('summary-time'); const summaryCorrectEl = getEl('summary-correct'); const summaryIncorrectEl = getEl('summary-incorrect'); const errorsListEl = getEl('summary-errors'); const restartButton = getEl('restart-button'); if(summaryPlayerNameEl) summaryPlayerNameEl.textContent = playerName || "Ẩn danh"; if(summaryTimeEl) summaryTimeEl.textContent = gameResults.totalTime || 'N/A'; if(summaryCorrectEl) summaryCorrectEl.textContent = gameResults.correct || 0; if(summaryIncorrectEl) summaryIncorrectEl.textContent = gameResults.incorrect || 0; if(errorsListEl) { errorsListEl.innerHTML = ''; if (gameResults.errors && gameResults.errors.length > 0) { gameResults.errors.forEach(err => { const li = document.createElement('li'); const shortInput = err.input && err.input.length > 100 ? err.input.substring(0, 97) + '...' : err.input; li.innerHTML = `<strong>Phần ${err.part}:</strong> ${err.issue} <br><small>(Input: ${shortInput || 'N/A'})</small>`; errorsListEl.appendChild(li); }); } else { errorsListEl.innerHTML = '<li>Chúc mừng! Bạn không mắc lỗi nào cả! ✨</li>'; } } else { console.error("Error list element not found in summary page."); } const submitReportButton = getEl('submit-report-button'); if (submitReportButton) { submitReportButton.disabled = false; submitReportButton.textContent = "Nộp Báo Cáo Lên Google Form 📋"; submitReportButton.style.backgroundColor = '#28a745'; submitReportButton.onclick = submitResultsToGoogleForm; } else { console.error("Submit report button not found in summary page."); } if (restartButton && !restartButton.dataset.listenerAttached) { restartButton.addEventListener('click', initGame); restartButton.dataset.listenerAttached = 'true'; } else if (!restartButton) { console.error("Restart button not found in summary page."); } }
+
+        // --- Initialization ---
+        function initGame() { console.log("Initializing new game with Gemini Flash AI + Google Form Auto Submit..."); currentPart = 0; gameResults = { correct: 0, incorrect: 0, errors: [], totalTime: '00:00' }; playerName = ""; if (timerInterval) clearInterval(timerInterval); timerInterval = null; const currentTimerEl = timerEl(); if(currentTimerEl) currentTimerEl.textContent = '00:00'; const currentgameContainerEl = gameContainerEl(); const currentsummaryPageEl = summaryPageEl(); const currentgameAreaEl = gameAreaEl(); const currentNextButtonEl = nextButtonEl(); const currentInstructionsEl = instructionsEl(); if(currentgameContainerEl) currentgameContainerEl.classList.remove('hidden'); if(currentsummaryPageEl) currentsummaryPageEl.style.display = 'none'; if(currentgameAreaEl) currentgameAreaEl.innerHTML = ''; clearFeedback(); clearHint(); if(currentNextButtonEl) currentNextButtonEl.classList.add('hidden'); hideTooltip(); if (currentInstructionsEl) currentInstructionsEl.innerHTML = '<p>👋 Chào bạn! Vui lòng nhập tên để bắt đầu.</p>'; if (currentgameAreaEl) { currentgameAreaEl.innerHTML = ` <div id="player-info" style="margin-bottom: 15px; padding: 20px; background-color: #e0f7fa; border-radius: 8px;"> <label for="player-name" style="display: block; margin-bottom: 8px; font-weight: bold;">Tên của bạn:</label> <input type="text" id="player-name" placeholder="Nhập tên của bạn..." required style="width: calc(100% - 22px); padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px;"> <button id="start-game-button" style="padding: 10px 20px;">Bắt đầu chơi!</button> </div> `; const startButton = getEl('start-game-button'); const playerNameInput = getEl('player-name'); if (startButton && playerNameInput) { playerNameInput.addEventListener('keypress', function(event) { if (event.key === 'Enter') { event.preventDefault(); startButton.click(); } }); startButton.addEventListener('click', () => { const name = playerNameInput.value.trim(); if (!name) { alert("Vui lòng nhập tên của bạn!"); return; } playerName = name; console.log("Player Name:", playerName); loadPart1(); startTimer(); }); } else { console.error("Không tìm thấy nút bắt đầu hoặc ô nhập tên."); } } else { console.error("Game area element not found for player info."); } const currentHintButtonEl = hintButtonEl(); if (currentHintButtonEl && !currentHintButtonEl.dataset.listenerAttached) { currentHintButtonEl.addEventListener('click', showHint); currentHintButtonEl.dataset.listenerAttached = 'true'; } else if (currentHintButtonEl) { currentHintButtonEl.classList.remove('hidden'); currentHintButtonEl.disabled = false; } else { console.warn("Hint button not found during init."); } }
+
+        // ----- START GAME -----
+        document.addEventListener('DOMContentLoaded', initGame);
+
+    </script>
+</body>
+</html>
