@@ -3,492 +3,424 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sân bay Mô phỏng - 飞行模拟游戏 2.3.5 (Full Code)</title>
+    <title>Công cụ Nhập vai Tiếng Trung - Tình huống Sân bay</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-        :root {
-            --airline-blue: #00529B;
-            --airline-blue-dark: #003a6d;
-            --accent-yellow: #FFC107;
-            --background-grey: #F0F2F5;
-            --text-dark: #212529;
-            --text-light: #6c757d;
-            --success-green: #28a745;
-            --danger-red: #dc3545;
-            --white: #FFFFFF;
-            --border-color: #dee2e6;
-            --font-family: 'Inter', sans-serif;
-        }
-
         body {
-            font-family: var(--font-family);
-            background-color: var(--background-grey);
-            margin: 0;
-            padding: 20px;
-            color: var(--text-dark);
+            font-family: 'Inter', sans-serif;
         }
-
-        .lang-vi { display: none; color: var(--text-light); font-weight: 400; margin-left: 5px; }
-        body.show-vietnamese .lang-vi { display: inline; }
-        
-        .game-wrapper { max-width: 1400px; margin: auto; }
-        .main-header { text-align: center; color: var(--airline-blue); font-size: 2.2rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; justify-content: center; gap: 15px; }
-        .tabs { display: flex; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem; background: var(--white); padding: 10px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        .tab-button { padding: 10px 25px; margin: 5px; cursor: pointer; border: 2px solid transparent; background-color: transparent; color: var(--text-light); border-radius: 30px; font-size: 1rem; font-weight: 600; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; }
-        .tab-button:hover { background-color: #e9ecef; }
-        .tab-button.active { background-color: var(--airline-blue); color: var(--white); border-color: var(--airline-blue); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .role-container { display: grid; grid-template-columns: 380px 1fr; gap: 2rem; background: var(--white); padding: 2rem; border-radius: 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.05); }
-        .instructions-panel { background-color: #f8f9fa; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); height: fit-content; }
-        .instructions-panel h3 { margin-top: 0; color: var(--airline-blue); border-bottom: 2px solid var(--airline-blue); padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }
-        .instructions-panel ul { padding-left: 20px; list-style-type: '💬'; padding-left: 25px; }
-        .instructions-panel li { margin-bottom: 10px; padding-left: 10px; }
-        .interaction-panel { padding: 1rem; }
-        .interaction-panel h3 { margin-top: 0; font-size: 1.5rem; color: var(--text-dark); text-align: center; margin-bottom: 2rem; }
-        .card { background: #fdfdff; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 1.5rem; }
-        .card h4, .card h5 { margin-top: 0; font-size: 1.1rem; color: var(--airline-blue-dark); }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-light); }
-        .form-group input[type="text"], .form-group input[type="date"], .form-group input[type="number"] { width: calc(100% - 22px); padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; font-family: var(--font-family); }
-        .gender-select { display: flex; gap: 1rem; }
-        .btn { padding: 12px 25px; border: none; border-radius: 8px; color: var(--white); cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.2s; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .btn-primary { background-color: var(--airline-blue); }
-        .btn-success { background-color: var(--success-green); }
-
-        /* Passenger UI */
-        #passport-display { display: flex; gap: 20px; padding: 20px; background: linear-gradient(to right, #eaf5ff, #f0f8ff); border: 1px solid var(--border-color); border-radius: 12px; align-items: center; }
-        #passport-photo { width: 120px; height: 150px; object-fit: cover; border-radius: 8px; border: 3px solid var(--white); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        #passenger-summary { margin-top: 1.5rem; padding: 1.5rem; border: 2px dashed var(--accent-yellow); background-color: #fffbeb; border-radius: 12px; }
-        .luggage-packing-area { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-
-        /* Check-in UI */
-        .checkin-app { background: var(--white); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); padding: 2rem; }
-        .checkin-app .input-group { display: flex; gap: 1rem; align-items: flex-end; }
-        .results-area { margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; min-height: 100px; }
-        .seat-map { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 15px; padding: 1rem; background: #e9ecef; border-radius: 8px; }
-        .seat { height: 35px; line-height: 35px; text-align: center; border: 1px solid var(--text-light); border-radius: 5px; cursor: pointer; font-size: 0.8rem; }
-        .seat.aisle { border: none; background: transparent; }
-        .seat.available { background: var(--white); }
-        .seat.occupied { background: var(--text-light); color: var(--white); cursor: not-allowed; }
-        .seat.selected { background: var(--airline-blue); color: var(--white); }
-        .boarding-pass { border: 2px dashed var(--airline-blue); padding: 1rem; margin-top: 1rem; background: #f0f8ff; }
-        .flight-route { font-size: 1.2rem; font-weight: 600; }
-        
-        /* Check-in Animation */
-        .luggage-animation-area { position: relative; height: 150px; background-color: #e9ecef; border-radius: 8px; margin-top: 1.5rem; border: 1px solid var(--border-color); overflow: hidden; }
-        .weighing-scale { position: absolute; width: 120px; height: 40px; background-color: #adb5bd; bottom: 0; left: 80px; border-top: 2px solid #6c757d; border-left: 2px solid #6c757d; border-right: 2px solid #6c757d; border-top-left-radius: 5px; border-top-right-radius: 5px; }
-        #scale-display { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); background-color: #000; color: var(--success-green); font-family: 'Courier New', monospace; padding: 2px 8px; border-radius: 3px; font-size: 0.9rem; font-weight: bold; }
-        .conveyor-belt-checkin { position: absolute; width: 70%; height: 25px; background-color: #343a40; background-image: repeating-linear-gradient(-45deg, #495057, #495057 10px, #343a40 10px, #343a40 20px); background-size: 28px 28px; bottom: 0; left: 200px; animation: scroll-belt 1s linear infinite; animation-play-state: paused; }
-        .conveyor-belt-checkin.running { animation-play-state: running; }
-        @keyframes scroll-belt { from { background-position: 0 0; } to { background-position: 28px 0; } }
-        .animated-suitcase { position: absolute; width: 80px; height: 100px; bottom: 40px; left: 100px; opacity: 0; transform: translateY(50px) scale(0.8); transition: all 0.8s ease-in-out; }
-        .animated-suitcase.on-scale { opacity: 1; transform: translateY(0) scale(1); }
-        .animated-suitcase.on-conveyor { left: 450px; transform: scale(0.7); transition-duration: 2.5s; }
-
-        /* Security UI */
-        .scanner-conveyor { width: 100%; height: 250px; background: #222; border: 2px solid #555; border-radius: 10px; margin: 1rem auto; position: relative; overflow: hidden; }
-        #scan-result-screen { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
-        .scanner-beam { width: 5px; height: 110%; background: rgba(255, 0, 0, 0.5); box-shadow: 0 0 15px 5px rgba(255, 0, 0, 0.5); position: absolute; top: -5%; left: -10px; }
-        .scanner-beam.scanning { animation: scan-horizontal 2s linear; }
-        @keyframes scan-horizontal { from { left: -10px; } to { left: 102%; } }
-        #scanned-luggage-bg { height: 200px; opacity: 0; transition: opacity 0.5s; }
-        .scanned-item { position: absolute; filter: invert(1) brightness(1.5) contrast(2) hue-rotate(90deg); opacity: 0; transition: opacity 0.5s; }
-        #item-laptop { width: 150px; top: 30px; left: 100px; }
-        #item-phone { width: 60px; top: 150px; left: 80px; }
-        #item-powerbank { width: 70px; top: 170px; left: 200px; }
-        #suspicious-item-box { position: absolute; border: 3px dashed var(--danger-red); display: none; animation: blink 1s infinite; }
-        @keyframes blink { 50% { border-color: transparent; } }
-        .action-log { text-align: left; background: #222; color: #eee; padding: 1rem; border-radius: 8px; margin-top: 1rem; font-family: 'Courier New', monospace; }
-
-        /* Vietnamese Toggle Switch */
-        .language-toggle { position: fixed; top: 20px; right: 20px; z-index: 1000; }
-        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: "VI"; color: var(--text-dark); height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
-        input:checked + .slider { background-color: var(--airline-blue); }
-        input:checked + .slider:before { transform: translateX(26px); }
+        .role-ui { display: none; }
+        .passport {
+            background: #1e3a8a; /* Dark blue */
+            color: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .boarding-pass {
+            border: 2px dashed #9ca3af;
+            background-image: linear-gradient(45deg, #f9fafb 25%, transparent 25%, transparent 75%, #f9fafb 75%, #f9fafb), linear-gradient(45deg, #f9fafb 25%, transparent 25%, transparent 75%, #f9fafb 75%, #f9fafb);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+        .scanner-conveyor {
+            background: #4b5563;
+            height: 100px;
+            width: 100%;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            position: relative;
+        }
+        .scanner-conveyor::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, #6b7280 25%, #4b5563 25%, #4b5563 50%, #6b7280 50%, #6b7280 75%, #4b5563 75%, #4b5563 100%);
+            background-size: 80px 100%;
+            animation: conveyor 2s linear infinite;
+        }
+        #luggage {
+            position: absolute;
+            left: -100px;
+            bottom: 10px;
+            font-size: 60px;
+            transition: left 2s linear;
+        }
+        #luggage.scanning {
+            left: calc(100% + 20px);
+        }
+        @keyframes conveyor {
+            from { transform: translateX(0); }
+            to { transform: translateX(-80px); }
+        }
+        .scanner-screen {
+            background: #111827;
+            border: 4px solid #374151;
+            height: 250px;
+            color: #22c55e;
+            font-family: monospace;
+        }
+        .sample-sentence-box li {
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+         .sample-sentence-box li:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
     </style>
 </head>
-<body>
-    <div class="language-toggle">
-        <label class="switch">
-            <input type="checkbox" onchange="toggleVietnamese(this.checked)">
-            <span class="slider"></span>
-        </label>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div id="app" class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8">
+        
+        <!-- Màn hình chọn vai -->
+        <div id="role-selection" class="text-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Công cụ Nhập vai Tiếng Trung</h1>
+            <p class="text-lg text-gray-600 mb-8">Chủ đề: Tại Sân bay (在机场)</p>
+            <h2 class="text-xl font-semibold text-gray-700 mb-6">Hãy chọn vai của bạn:</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <button id="select-passenger-btn" class="group bg-blue-500 text-white p-6 rounded-xl shadow-md hover:bg-blue-600 transition-all duration-300">
+                    <div class="text-5xl mb-3">✈️</div>
+                    <h3 class="text-xl font-bold">Hành khách (乘客)</h3>
+                </button>
+                <button id="select-checkin-btn" class="group bg-green-500 text-white p-6 rounded-xl shadow-md hover:bg-green-600 transition-all duration-300">
+                    <div class="text-5xl mb-3">🎟️</div>
+                    <h3 class="text-xl font-bold">Nhân viên Check-in (服务员)</h3>
+                </button>
+                <button id="select-security-btn" class="group bg-yellow-500 text-white p-6 rounded-xl shadow-md hover:bg-yellow-600 transition-all duration-300">
+                    <div class="text-5xl mb-3">🛂</div>
+                    <h3 class="text-xl font-bold">Nhân viên An ninh (服务员)</h3>
+                </button>
+                <button id="select-attendant-btn" class="group bg-purple-500 text-white p-6 rounded-xl shadow-md hover:bg-purple-600 transition-all duration-300">
+                    <div class="text-5xl mb-3">👩‍✈️</div>
+                    <h3 class="text-xl font-bold">Tiếp viên (空姐)</h3>
+                </button>
+            </div>
+        </div>
+
+        <!-- Giao diện từng vai -->
+        <div id="passenger-ui" class="role-ui">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Vai: Hành khách (乘客)</h2>
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <label for="passenger-name" class="block text-lg font-medium text-gray-700">Nhập tên của bạn để tạo hộ chiếu:</label>
+                <input type="text" id="passenger-name" class="mt-2 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg p-2" placeholder="Ví dụ: Nguyễn Văn A">
+                <button id="generate-passport-btn" class="mt-4 w-full bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-600 transition">Tạo Hộ chiếu (办护照)</button>
+            </div>
+            <div id="passport-display" class="mt-6 hidden">
+                <div class="passport max-w-md mx-auto">
+                    <div class="text-center border-b border-gray-400 pb-2 mb-4">
+                        <h3 class="text-xl font-bold tracking-widest">HỘ CHIẾU / PASSPORT</h3>
+                        <p class="text-sm">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                    </div>
+                    <div class="flex space-x-4">
+                        <div class="w-1/3">
+                            <div class="bg-gray-300 h-32 w-24 rounded flex items-center justify-center text-gray-500">
+                                ẢNH
+                            </div>
+                        </div>
+                        <div class="w-2/3 space-y-2">
+                            <div>
+                                <p class="text-xs opacity-70">Họ và tên / Full name</p>
+                                <p id="passport-name" class="font-semibold text-lg"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs opacity-70">Số hộ chiếu / Passport No.</p>
+                                <p id="passport-number" class="font-mono"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs opacity-70">Ngày sinh / Date of birth</p>
+                                <p>01/01/1990</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-200 sample-sentence-box">
+                <h4 class="font-semibold text-lg mb-3 text-blue-800">🗣️ Mẫu câu tham khảo</h4>
+                <ul class="space-y-3">
+                    <li>
+                        <p class="font-medium text-gray-800">我们先去办理登机手续，把行李托运了。</p>
+                        <p class="text-sm text-gray-600"><em>Wǒmen xiān qù bànlǐ dēng jī shǒuxù, bǎ xínglǐ tuōyùnle.</em></p>
+                        <p class="text-sm text-gray-700">→ Chúng ta đi làm thủ tục lên máy bay trước, rồi gửi hành lý.</p>
+                    </li>
+                    <li>
+                        <p class="font-medium text-gray-800">啊，是几把钥匙和两个硬币。</p>
+                        <p class="text-sm text-gray-600"><em>Ā, shì jǐ bǎ yàoshi hé liǎng gè yìngbì.</em></p>
+                        <p class="text-sm text-gray-700">→ À, là mấy cái chìa khóa và hai đồng xu.</p>
+                    </li>
+                     <li>
+                        <p class="font-medium text-gray-800">我还不会系安全带呢。</p>
+                        <p class="text-sm text-gray-600"><em>Wǒ hái bù huì jì ānquándài ne.</em></p>
+                        <p class="text-sm text-gray-700">→ Tôi vẫn chưa biết cách thắt dây an toàn.</p>
+                    </li>
+                </ul>
+            </div>
+            <button class="reset-app-btn mt-6 text-blue-600 hover:underline">← Quay lại chọn vai</button>
+        </div>
+
+        <div id="checkin_staff-ui" class="role-ui">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Vai: Nhân viên Check-in (服务员)</h2>
+            <form id="checkin-form" class="bg-gray-50 p-6 rounded-lg space-y-4">
+                <h3 class="text-lg font-semibold">Thông tin chuyến bay của hành khách:</h3>
+                <div>
+                    <label for="checkin-name" class="block text-sm font-medium text-gray-700">Tên hành khách (乘客姓名)</label>
+                    <input type="text" id="checkin-name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2" required>
+                </div>
+                <div>
+                    <label for="checkin-flight" class="block text-sm font-medium text-gray-700">Chuyến bay (航班)</label>
+                    <input type="text" id="checkin-flight" value="VN502" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2" required>
+                </div>
+                 <div>
+                    <label for="checkin-dest" class="block text-sm font-medium text-gray-700">Điểm đến (目的地)</label>
+                    <input type="text" id="checkin-dest" value="北京 (Běijīng)" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2" required>
+                </div>
+                <button type="submit" class="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition">Làm thủ tục & In thẻ lên máy bay (办手续)</button>
+            </form>
+            <div id="boarding-pass-display" class="mt-6 hidden">
+                <div class="boarding-pass p-4 max-w-lg mx-auto bg-white rounded-lg">
+                    <h3 class="text-center font-bold text-xl text-blue-800">THẺ LÊN MÁY BAY / 登机牌</h3>
+                    <div class="grid grid-cols-3 gap-4 mt-4 text-left">
+                        <div class="col-span-2 space-y-3">
+                            <div><p class="text-xs text-gray-500">Họ và tên / 姓名</p><p id="bp-name" class="font-bold text-lg"></p></div>
+                            <div><p class="text-xs text-gray-500">Chuyến bay / 航班</p><p id="bp-flight" class="font-bold text-lg"></p></div>
+                            <div><p class="text-xs text-gray-500">Điểm đến / 目的地</p><p id="bp-dest" class="font-bold text-lg"></p></div>
+                        </div>
+                        <div class="col-span-1 text-right space-y-3">
+                             <div><p class="text-xs text-gray-500">Cổng / 登机口</p><p class="font-bold text-2xl">25A</p></div>
+                             <div><p class="text-xs text-gray-500">Ghế / 座位</p><p class="font-bold text-2xl">18C</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 bg-green-50 p-4 rounded-lg border border-green-200 sample-sentence-box">
+                <h4 class="font-semibold text-lg mb-3 text-green-800">🗣️ Mẫu câu tham khảo</h4>
+                <ul class="space-y-3">
+                    <li>
+                        <p class="font-medium text-gray-800">请把护照和机票给我。</p>
+                        <p class="text-sm text-gray-600"><em>Qǐng bǎ hùzhào hé jīpiào gěi wǒ.</em></p>
+                        <p class="text-sm text-gray-700">→ Xin vui lòng cho tôi xem hộ chiếu và vé máy bay.</p>
+                    </li>
+                    <li>
+                        <p class="font-medium text-gray-800">哪个箱子要托运？把它放上去吧。</p>
+                        <p class="text-sm text-gray-600"><em>Nǎge xiāngzi yào tuōyùn? Bǎ tā fàng shàngqù ba.</em></p>
+                        <p class="text-sm text-gray-700">→ Vali nào cần ký gửi? Xin hãy đặt nó lên đây.</p>
+                    </li>
+                     <li>
+                        <p class="font-medium text-gray-800">这是登机牌儿，请拿好。</p>
+                        <p class="text-sm text-gray-600"><em>Zhè shì dēng jī páir, qǐng ná hǎo.</em></p>
+                        <p class="text-sm text-gray-700">→ Đây là thẻ lên máy bay của ông, xin hãy giữ cẩn thận.</p>
+                    </li>
+                </ul>
+            </div>
+            <button class="reset-app-btn mt-6 text-blue-600 hover:underline">← Quay lại chọn vai</button>
+        </div>
+
+        <div id="security_staff-ui" class="role-ui">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Vai: Nhân viên An ninh (服务员)</h2>
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <button id="scan-btn" class="w-full bg-yellow-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-yellow-600 transition mb-4">Đưa hành lý qua máy quét (过安检)</button>
+                <div class="scanner-conveyor">
+                    <div id="luggage">🧳</div>
+                </div>
+                <div id="scanner-screen" class="scanner-screen mt-4 rounded-lg p-4 flex items-center justify-center">
+                    <p id="scanner-status">... Sẵn sàng quét ...</p>
+                </div>
+            </div>
+            <div class="mt-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200 sample-sentence-box">
+                <h4 class="font-semibold text-lg mb-3 text-yellow-800">🗣️ Mẫu câu tham khảo</h4>
+                <ul class="space-y-3">
+                    <li>
+                        <p class="font-medium text-gray-800">这位女士，你口袋里装的是什么？</p>
+                        <p class="text-sm text-gray-600"><em>Zhè wèi nǚshì, nǐ kǒudài lǐ zhuāng de shì shénme?</em></p>
+                        <p class="text-sm text-gray-700">→ Thưa cô, trong túi của cô có chứa gì vậy?</p>
+                    </li>
+                    <li>
+                        <p class="font-medium text-gray-800">请把口袋里的东西都掏出来。</p>
+                        <p class="text-sm text-gray-600"><em>Qǐng bǎ kǒudài lǐ de dōngxī dōu tāo chūlái.</em></p>
+                        <p class="text-sm text-gray-700">→ Xin hãy lấy hết đồ trong túi ra.</p>
+                    </li>
+                     <li>
+                        <p class="font-medium text-gray-800">好了。请进去吧。</p>
+                        <p class="text-sm text-gray-600"><em>Hǎole. Qǐng jìnqù ba.</em></p>
+                        <p class="text-sm text-gray-700">→ Được rồi. Mời cô vào trong.</p>
+                    </li>
+                </ul>
+            </div>
+            <button class="reset-app-btn mt-6 text-blue-600 hover:underline">← Quay lại chọn vai</button>
+        </div>
+
+        <div id="flight_attendant-ui" class="role-ui">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Vai: Tiếp viên (空姐)</h2>
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <h3 class="text-xl font-bold text-center mb-4 border-b pb-2">Thực đơn hôm nay (今日菜单)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-semibold text-lg mb-2">🍱 Đồ ăn (主食)</h4>
+                        <ul class="space-y-2 list-disc list-inside">
+                            <li>Cơm gà - 鸡肉饭 (Jīròu fàn)</li>
+                            <li>Mì bò - 牛肉面 (Niúròu miàn)</li>
+                            <li>Cơm chay - 素食饭 (Sùshí fàn)</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg mb-2">🥤 Đồ uống (饮料)</h4>
+                        <ul class="space-y-2 list-disc list-inside">
+                            <li>Nước cam - 橙汁 (Chéngzhī)</li>
+                            <li>Cà phê - 咖啡 (Kāfēi)</li>
+                            <li>Trà - 茶 (Chá)</li>
+                            <li>Nước lọc - 水 (Shuǐ)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 bg-purple-50 p-4 rounded-lg border border-purple-200 sample-sentence-box">
+                <h4 class="font-semibold text-lg mb-3 text-purple-800">🗣️ Mẫu câu tham khảo</h4>
+                <ul class="space-y-3">
+                    <li>
+                        <p class="font-medium text-gray-800">飞机马上就要起飞了，请大家把安全带系好，把手机关上。</p>
+                        <p class="text-sm text-gray-600"><em>Fēijī mǎshàng jiù yào qǐfēile, qǐng dàjiā bǎ ānquándài jì hǎo, bǎ shǒujī guānshàng.</em></p>
+                        <p class="text-sm text-gray-700">→ Máy bay sắp cất cánh, xin quý khách vui lòng thắt dây an toàn và tắt điện thoại di động.</p>
+                    </li>
+                    <li>
+                        <p class="font-medium text-gray-800">您好，请问您需要喝点什么？</p>
+                        <p class="text-sm text-gray-600"><em>Nín hǎo, qǐngwèn nín xūyào hē diǎn shénme?</em></p>
+                        <p class="text-sm text-gray-700">→ Chào ngài, ngài có muốn uống gì không?</p>
+                    </li>
+                     <li>
+                        <p class="font-medium text-gray-800">我来帮您。</p>
+                        <p class="text-sm text-gray-600"><em>Wǒ lái bāng nín.</em></p>
+                        <p class="text-sm text-gray-700">→ Để tôi giúp ngài.</p>
+                    </li>
+                </ul>
+            </div>
+            <button class="reset-app-btn mt-6 text-blue-600 hover:underline">← Quay lại chọn vai</button>
+        </div>
+
     </div>
 
-    <div class="game-wrapper">
-        <h1 class="main-header">飞行模拟游戏 <span class="lang-vi">Sân bay Mô phỏng 2.3.5</span></h1>
-        <div class="tabs">
-            <button class="tab-button active" onclick="switchRole('Passenger')">乘客 <span class="lang-vi">Hành khách</span></button>
-            <button class="tab-button" onclick="switchRole('CheckIn')">值机员 <span class="lang-vi">Check-in</span></button>
-            <button class="tab-button" onclick="switchRole('Security')">安检员 <span class="lang-vi">An ninh</span></button>
-            <button class="tab-button" onclick="switchRole('FlightAttendant')">乘务员 <span class="lang-vi">Tiếp viên</span></button>
-        </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Lấy các phần tử DOM ---
+        const roleSelectionDiv = document.getElementById('role-selection');
+        const roleUIs = document.querySelectorAll('.role-ui');
+        const checkinForm = document.getElementById('checkin-form');
+        const luggageEl = document.getElementById('luggage');
+        const scannerScreenEl = document.getElementById('scanner-screen');
+        const scanBtn = document.getElementById('scan-btn');
+        const passportDisplay = document.getElementById('passport-display');
+        const boardingPassDisplay = document.getElementById('boarding-pass-display');
 
-        <div id="Passenger" class="tab-content active">
-            <div class="role-container">
-                <aside class="instructions-panel">
-                    <h3>乘客任务 <span class="lang-vi">Nhiệm vụ của Hành khách</span></h3>
-                    <ol>
-                        <li>办理护照 <span class="lang-vi">Tạo hộ chiếu.</span></li>
-                        <li>收拾行李 <span class="lang-vi">Đóng gói hành lý.</span></li>
-                        <li><strong>把 “航班信息” 截图发给值机员。</strong><span class="lang-vi"><strong>Chụp ảnh màn hình "Thông tin Chuyến bay"</strong> gửi cho Nhân viên Check-in.</span></li>
-                        <li>到值机柜台说：`你好！我要<strong>把</strong>机票和护照<strong>给你</strong>。`</li>
-                        <li>被问到时，说：`我要<strong>把</strong>这个箱子<strong>托运</strong>。`</li>
-                    </ol>
-                </aside>
-                <main class="interaction-panel">
-                    <h3>乘客界面 <span class="lang-vi">Giao diện của Hành khách</span></h3>
-                    <div class="card">
-                        <h4>1. 办护照 <span class="lang-vi">Tạo Hộ chiếu</span></h4>
-                        <div class="form-group"><label>姓名 <span class="lang-vi">Họ và tên</span></label><input type="text" id="name" placeholder="例如: NGUYEN VAN A"></div>
-                        <div class="form-group"><label>出生日期 <span class="lang-vi">Ngày sinh</span></label><input type="date" id="dob"></div>
-                        <div class="form-group"><label>性别 <span class="lang-vi">Giới tính</span></label>
-                            <div class="gender-select">
-                                <label><input type="radio" name="gender" value="male" checked> 男 <span class="lang-vi">Nam</span></label>
-                                <label><input type="radio" name="gender" value="female"> 女 <span class="lang-vi">Nữ</span></label>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary" onclick="createPassport()">办好护照 <span class="lang-vi">Tạo Hộ chiếu</span></button>
-                    </div>
-                     <div class="card">
-                        <h4>2. 收拾行李 <span class="lang-vi">Đóng gói Hành lý</span></h4>
-                        <div class="luggage-packing-area">
-                            <div>
-                                <h5>托运行李 <span class="lang-vi">Hành lý ký gửi</span></h5>
-                                <div id="checked-luggage-list"></div>
-                                <p><strong>重量 <span class="lang-vi">Cân nặng</span>: <span id="checked-weight">0.0</span> kg</strong></p>
-                            </div>
-                            <div>
-                                <h5>手提行李 <span class="lang-vi">Hành lý xách tay</span></h5>
-                                <div id="carry-on-luggage-list"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="passenger-summary" style="display:none;">
-                        <h4 style="text-align:center; color: var(--danger-red);">请截图此部分 <span class="lang-vi">CHỤP ẢNH MÀN HÌNH NÀY</span></h4>
-                        <div id="passport-display">
-                            <img id="passport-photo">
-                            <div id="passport-info">
-                                <p><strong>姓名:</strong> <span id="p-name"></span></p>
-                                <p><strong>出生日期:</strong> <span id="p-dob"></span></p>
-                                <p><strong>预订代码:</strong> <span id="p-booking"></span></p>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            </div>
-        </div>
+        // --- Gắn các sự kiện ---
+        document.getElementById('select-passenger-btn').addEventListener('click', () => showRoleUI('passenger'));
+        document.getElementById('select-checkin-btn').addEventListener('click', () => showRoleUI('checkin_staff'));
+        document.getElementById('select-security-btn').addEventListener('click', () => showRoleUI('security_staff'));
+        document.getElementById('select-attendant-btn').addEventListener('click', () => showRoleUI('flight_attendant'));
+
+        document.getElementById('generate-passport-btn').addEventListener('click', generatePassport);
         
-        <div id="CheckIn" class="tab-content">
-             <div class="role-container">
-                <aside class="instructions-panel">
-                    <h3>值机员任务 <span class="lang-vi">Nhiệm vụ của Nhân viên Check-in</span></h3>
-                    <ol>
-                        <li>收到乘客的截图 <span class="lang-vi">Nhận ảnh chụp màn hình từ Hành khách.</span></li>
-                        <li>跟乘客打招呼: `你好！请<strong>把</strong>您的护照给我看看。`</li>
-                        <li>输入乘客的信息 <span class="lang-vi">Nhập thông tin khách vào hệ thống.</span></li>
-                        <li>让乘客托运他们的行李: `请<strong>把</strong>要托运的行李<strong>放上来</strong>。`</li>
-                        <li>打印登机牌: `这是您的登机牌，请<strong>拿好</strong>。`</li>
-                    </ol>
-                </aside>
-                <main class="interaction-panel">
-                    <h3>值机系统 <span class="lang-vi">Hệ thống làm thủ tục</span> (DCS)</h3>
-                    <div class="checkin-app">
-                        <div class="input-group">
-                             <div class="form-group" style="flex:1;"><label>预订代码 <span class="lang-vi">Mã đặt chỗ</span></label><input type="text" id="booking-ref" placeholder="输入代码..."></div>
-                            <div class="form-group" style="flex:2;"><label>乘客姓名 <span class="lang-vi">Tên hành khách</span></label><input type="text" id="passenger-name" placeholder="输入姓名..."></div>
-                            <button class="btn btn-primary" onclick="findPassenger()">查找 <span class="lang-vi">Tra cứu</span></button>
-                        </div>
-                         <div class="input-group" style="margin-top:1rem;">
-                            <div class="form-group" style="flex:1;"><label>行李重量 <span class="lang-vi">Cân nặng (kg)</span></label><input type="number" id="luggage-weight" placeholder="输入重量..."></div>
-                             <button class="btn btn-primary" onclick="checkLuggage()">检查行李 <span class="lang-vi">Kiểm tra</span></button>
-                        </div>
-                        
-                        <div class="luggage-animation-area">
-                            <div class="weighing-scale">
-                                <div id="scale-display">0.0 kg</div>
-                            </div>
-                            <div class="conveyor-belt-checkin" id="conveyor-belt"></div>
-                            <img src="https://product.hstatic.net/1000079290/product/2_0012__dsc9961_copy_f03ca78b030c42fc980ed2d0b0191f1a_master.jpg" class="animated-suitcase">
-                        </div>
-                        
-                        <div class="results-area" id="checkin-results"></div>
-                        <h4>选座位 <span class="lang-vi">Chọn chỗ ngồi</span></h4>
-                        <div class="seat-map" id="seat-map-checkin"></div>
-                        <div style="text-align:center; margin-top:1.5rem;"><button class="btn btn-success" onclick="issueBoardingPass()">打印登机牌 <span class="lang-vi">In Thẻ</span></button></div>
-                        <div id="boarding-pass-area"></div>
-                    </div>
-                </main>
-            </div>
-        </div>
+        document.querySelectorAll('.reset-app-btn').forEach(button => {
+            button.addEventListener('click', resetApp);
+        });
 
-        <div id="Security" class="tab-content">
-             <div class="role-container">
-                <aside class="instructions-panel">
-                     <h3>安检员任务 <span class="lang-vi">Nhiệm vụ của Nhân viên An ninh</span></h3>
-                    <ol>
-                        <li>要求乘客: `请<strong>把</strong>电脑、手机和充电宝都<strong>拿出来</strong>。` <span class="lang-vi">(Sạc dự phòng: 充电宝 chōngdiànbǎo)</span></li>
-                        <li>操作扫描仪 <span class="lang-vi">Vận hành máy soi chiếu.</span></li>
-                        <li>如果发现可疑物品，要求开包检查: `对不起，请<strong>把</strong>您的包<strong>打开</strong>。`</li>
-                    </ol>
-                </aside>
-                <main class="interaction-panel">
-                    <h3>安检站 <span class="lang-vi">Trạm kiểm tra An ninh</span></h3>
-                    <div class="card">
-                        <button class="btn btn-primary" onclick="startScan()">开始扫描 <span class="lang-vi">Bắt đầu soi chiếu</span></button>
-                        <div class="scanner-conveyor">
-                            <div id="scan-result-screen"></div>
-                        </div>
-                        <div class="action-log" id="security-log">安检日志:<br><span class="lang-vi">NHẬT KÝ AN NINH:</span><br></div>
-                    </div>
-                </main>
-            </div>
-        </div>
-        
-        <div id="FlightAttendant" class="tab-content">
-            <div class="role-container">
-                 <aside class="instructions-panel">
-                     <h3>乘务员任务 <span class="lang-vi">Nhiệm vụ của Tiếp viên</span></h3>
-                    <ol>
-                        <li>起飞前广播: `女士们，先生们！请大家<strong>把</strong>安全带<strong>系好</strong>，<strong>把</strong>手机<strong>关上</strong>。`</li>
-                        <li>询问乘客需求: `你好，你想吃点儿什么或者喝点儿什么？`</li>
-                    </ol>
-                 </aside>
-                 <main class="interaction-panel">
-                    <h3>乘务员平板 <span class="lang-vi">Bảng điều khiển (Tablet)</span></h3>
-                    <div class="card menu-card">
-                         <h4>今日菜单 <span class="lang-vi">Thực đơn hôm nay</span> (VJ123)</h4>
-                         <h5>主食 <span class="lang-vi">Món chính</span></h5>
-                         <ul>
-                             <li>越南牛肉河粉 <span class="lang-vi">Phở bò Việt Nam</span></li>
-                             <li>海南鸡饭 <span class="lang-vi">Cơm gà Hải Nam</span></li>
-                         </ul>
-                         <h5>饮料 <span class="lang-vi">Đồ uống</span></h5>
-                         <ul>
-                             <li>椰子水 <span class="lang-vi">Nước dừa</span></li>
-                             <li>莲花茶 <span class="lang-vi">Trà sen</span></li>
-                             <li>冰奶咖啡 <span class="lang-vi">Cà phê sữa đá</span></li>
-                         </ul>
-                    </div>
-                 </main>
-            </div>
-        </div>
-    </div>
+        if(checkinForm) {
+            checkinForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const name = document.getElementById('checkin-name').value;
+                const flight = document.getElementById('checkin-flight').value;
+                const dest = document.getElementById('checkin-dest').value;
+                
+                document.getElementById('bp-name').textContent = name;
+                document.getElementById('bp-flight').textContent = flight;
+                document.getElementById('bp-dest').textContent = dest;
 
-<script>
-    // --- Global Data & Config ---
-    const passengerProfile = { name: '', dob: '', bookingRef: '', carryOnItems: [], checkedWeight: 0 };
-    const checkinData = { passengerFound: false, seat: null };
-    const malePhotos = ['https://danviet.ex-cdn.com/files/f1/296231569849192448/2022/7/18/z3575814842290f4a344b1db566b37fa96b7a2550a9801-1658133352416631936514.jpg', 'https://media-cdn-v2.laodong.vn/storage/newsportal/2023/9/26/1246534/Hua-Quang-Han-1B.jpeg'];
-    const femalePhotos = ['https://images2.thanhnien.vn/528068263637045248/2025/5/27/doan-di-bang-3-17483305857971154397203.jpg', 'https://m.media-amazon.com/images/M/MV5BYWYwYzYzMjUtNWE0MS00NmJlLTljNGMtNzliYjg5NzQ1OWY5XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg'];
-    const itemData = {
-        checked: [{ name: '衣服', vi: '(Quần áo)', weight: 7.0 }, { name: '书', vi: '(Sách)', weight: 2.5 }],
-        carryOn: [{ name: '笔记本电脑', vi: '(Laptop)', id: 'laptop' }, { name: '手机', vi: '(Điện thoại)', id: 'phone' }, { name: '充电宝', vi: '(Sạc dự phòng)', id: 'powerbank' }]
-    };
+                if(boardingPassDisplay) boardingPassDisplay.classList.remove('hidden');
+            });
+        }
 
-    // --- Core UI Functions ---
-    function toggleVietnamese(show) { document.body.classList.toggle('show-vietnamese', show); }
-    function switchRole(roleName) {
-        document.querySelectorAll('.tab-content, .tab-button').forEach(el => el.classList.remove('active'));
-        document.getElementById(roleName).classList.add('active');
-        event.currentTarget.classList.add('active');
-    }
+        if(scanBtn) {
+            scanBtn.addEventListener('click', scanLuggage);
+        }
 
-    // --- Passenger Logic ---
-    function createPassport() {
-        const name = document.getElementById('name').value.toUpperCase();
-        if (!name) { alert('请输入您的姓名! (Vui lòng điền tên!)'); return; }
-        passengerProfile.name = name;
-        passengerProfile.dob = document.getElementById('dob').value;
-        passengerProfile.bookingRef = 'WXYZ' + Math.floor(Math.random() * 90 + 10);
-        
-        const gender = document.querySelector('input[name="gender"]:checked').value;
-        const photoArray = gender === 'male' ? malePhotos : femalePhotos;
-        document.getElementById('passport-photo').src = photoArray[Math.floor(Math.random() * photoArray.length)];
-        
-        document.getElementById('p-name').innerText = name;
-        document.getElementById('p-dob').innerText = passengerProfile.dob;
-        document.getElementById('p-booking').innerText = passengerProfile.bookingRef;
-        document.getElementById('passenger-summary').style.display = 'block';
-    }
-    function updateLuggage() {
-        let totalWeight = 0;
-        document.querySelectorAll('#checked-luggage-list input:checked').forEach(cb => totalWeight += parseFloat(cb.value));
-        passengerProfile.checkedWeight = totalWeight;
-        document.getElementById('checked-weight').innerText = totalWeight.toFixed(1);
+        // --- Các hàm chức năng ---
+        function showRoleUI(role) {
+            if(roleSelectionDiv) roleSelectionDiv.style.display = 'none';
+            roleUIs.forEach(ui => ui.style.display = 'none');
+            const targetUI = document.getElementById(`${role}-ui`);
+            if(targetUI) targetUI.style.display = 'block';
+        }
 
-        passengerProfile.carryOnItems = [];
-        document.querySelectorAll('#carry-on-luggage-list input:checked').forEach(cb => passengerProfile.carryOnItems.push(cb.value));
-    }
+        function resetApp() {
+            if(roleSelectionDiv) roleSelectionDiv.style.display = 'block';
+            roleUIs.forEach(ui => ui.style.display = 'none');
+            // Reset trạng thái các giao diện
+            if(passportDisplay) passportDisplay.classList.add('hidden');
+            if(boardingPassDisplay) boardingPassDisplay.classList.add('hidden');
+            if(checkinForm) checkinForm.reset();
+            resetScanner();
+        }
 
-    // --- Check-in Logic ---
-    const checkinLog = document.getElementById('checkin-results');
-    function findPassenger() {
-        const nameInput = document.getElementById('passenger-name').value.toUpperCase();
-        if (!nameInput) { checkinLog.innerHTML = `<p style="color:red;">❌ 请输入乘客姓名。</p>`; return; }
-        checkinLog.innerHTML = `<p style="color:green;">✅ 正在处理乘客: ${nameInput} 的信息。</p>`;
-        checkinData.passengerFound = true;
-    }
-
-    function checkLuggage() {
-        const weightInput = parseFloat(document.getElementById('luggage-weight').value);
-        const suitcase = document.querySelector('#CheckIn .animated-suitcase');
-        const scaleDisplay = document.getElementById('scale-display');
-        const conveyor = document.getElementById('conveyor-belt');
-
-        suitcase.classList.remove('on-scale', 'on-conveyor');
-        conveyor.classList.remove('running');
-        scaleDisplay.textContent = '0.0 kg';
-        checkinLog.innerHTML = '';
-        
-        void suitcase.offsetWidth; 
-
-        suitcase.classList.add('on-scale');
-        
-        setTimeout(() => {
-            if (isNaN(weightInput)) {
-                checkinLog.innerHTML += '<p style="color:red;">请输入有效的重量。</p>';
-                suitcase.classList.remove('on-scale');
+        // Logic cho vai Hành khách
+        function generatePassport() {
+            const nameInput = document.getElementById('passenger-name');
+            const name = nameInput.value;
+            if (!name) {
+                alert('Vui lòng nhập tên của bạn!');
                 return;
             }
+            document.getElementById('passport-name').textContent = name.toUpperCase();
+            document.getElementById('passport-number').textContent = 'C' + Math.random().toString().slice(2, 10).toUpperCase();
+            if(passportDisplay) passportDisplay.classList.remove('hidden');
+        }
 
-            let currentWeight = 0;
-            const interval = setInterval(() => {
-                currentWeight += 1.7;
-                if (currentWeight >= weightInput) {
-                    currentWeight = weightInput;
-                    clearInterval(interval);
-                }
-                scaleDisplay.textContent = currentWeight.toFixed(1) + ' kg';
-            }, 50);
+        // Logic cho vai Nhân viên an ninh
+        function resetScanner() {
+            if(luggageEl) luggageEl.classList.remove('scanning');
+            if(scannerScreenEl) {
+                scannerScreenEl.classList.remove('bg-red-900');
+                scannerScreenEl.innerHTML = '<p id="scanner-status">... Sẵn sàng quét ...</p>';
+            }
+            if(scanBtn) scanBtn.disabled = false;
+        }
+
+        function scanLuggage() {
+            if(!scanBtn || !scannerScreenEl || !luggageEl) return;
+            
+            scanBtn.disabled = true;
+            scannerScreenEl.innerHTML = '<p id="scanner-status">Đang quét...</p>';
+            luggageEl.classList.add('scanning');
 
             setTimeout(() => {
-                checkinLog.innerHTML += `<p>最终重量 <span class="lang-vi">Trọng lượng cuối cùng</span>: ${weightInput.toFixed(1)} kg。</p>`;
-                const isOverweight = weightInput > 20.0;
-                checkinLog.innerHTML += isOverweight ? '<p style="color:red;">⚠️ 行李超重!</p>' : '<p style="color:green;">✅ 行李重量合格。</p>';
-
-                if (!isOverweight) {
-                    setTimeout(() => {
-                        checkinLog.innerHTML += '<p>行李正在传送... <span class="lang-vi">Hành lý đang được chuyển đi...</span></p>';
-                        conveyor.classList.add('running');
-                        suitcase.classList.add('on-conveyor');
-                        
-                        setTimeout(() => {
-                           suitcase.classList.remove('on-scale', 'on-conveyor');
-                           conveyor.classList.remove('running');
-                        }, 2500);
-                    }, 1000);
+                const hasSuspiciousItem = Math.random() > 0.6; // 40% khả năng có vật khả nghi
+                if (hasSuspiciousItem) {
+                    scannerScreenEl.classList.add('bg-red-900');
+                    scannerScreenEl.innerHTML = `
+                        <div class="text-center text-red-400">
+                            <p class="text-4xl animate-pulse">⚠️</p>
+                            <p class="font-bold text-xl">ĐÃ PHÁT HIỆN VẬT KHẢ NGHI</p>
+                            <p>(发现可疑物品)</p>
+                            <p class="text-2xl mt-4">🔪</p>
+                        </div>
+                    `;
+                } else {
+                     scannerScreenEl.innerHTML = `
+                        <div class="text-center text-green-400">
+                            <p class="text-4xl">✅</p>
+                            <p class="font-bold text-xl">AN TOÀN</p>
+                            <p>(安全)</p>
+                        </div>
+                    `;
                 }
-            }, 1500); 
-        }, 800);
-    }
-    
-    function issueBoardingPass() {
-        if (!checkinData.seat) { alert('请为乘客选座位! (Vui lòng chọn chỗ ngồi!)'); return; }
-        const name = document.getElementById('passenger-name').value.toUpperCase();
-        document.getElementById('boarding-pass-area').innerHTML = `<div class="boarding-pass"><h4 style="color: var(--airline-blue);">登机牌 <span class="lang-vi">BOARDING PASS</span></h4><p><strong>航班 <span class="lang-vi">Flight</span>:</strong> VJ123</p><p class="flight-route">胡志明市 (SGN) -> 北京 (PEK)</p><p><strong>旅客 <span class="lang-vi">Passenger</span>:</strong> ${name}</p><p><strong>座位 <span class="lang-vi">Seat</span>:</strong> ${checkinData.seat}</p><p><strong>登机时间 <span class="lang-vi">Boarding Time</span>:</strong> 18:30</p></div>`;
-    }
+            }, 2000);
 
-    // --- Security Logic ---
-    const securityLog = document.getElementById('security-log');
-    function startScan() {
-        const screen = document.getElementById('scan-result-screen');
-        securityLog.innerHTML = '安检日志:<br><span class="lang-vi">NHẬT KÝ AN NINH:</span><br>> 开始扫描...';
-        
-        let beam = document.createElement('div');
-        beam.className = 'scanner-beam scanning';
-        screen.innerHTML = '';
-        screen.appendChild(beam);
-        
-        setTimeout(() => {
-            beam.remove();
-            let screenHTML = `<img id="scanned-luggage-bg" src="https://product.hstatic.net/1000079290/product/2_0012__dsc9961_copy_f03ca78b030c42fc980ed2d0b0191f1a_master.jpg" style="opacity: 0.5; height: 200px;">`;
-            screen.innerHTML = screenHTML;
-
-            const itemsInScan = passengerProfile.carryOnItems;
-            if (itemsInScan.length === 0) {
-                securityLog.innerHTML += '<div>> 行李中没有电子产品。<span class="lang-vi">Không có đồ điện tử. An toàn.</span></div>';
-                return;
-            }
-
-            let itemElements = '';
-            itemsInScan.forEach(id => {
-                let src = '';
-                if (id === 'laptop') src = 'https://atpro.com.vn/wp-content/uploads/2024/02/laptop-la-gi-may-tinh-xach-tay-la-gi1.jpeg';
-                if (id === 'phone') src = 'https://product.hstatic.net/1000406564/product/iphone11-tr_3064909d9a634a548fb3657c570f5c80_master.jpg';
-                if (id === 'powerbank') src = 'https://hanoicomputercdn.com/media/product/72608_pin_sac_du_phong_akus_dp150_10_000_5.png';
-                itemElements += `<img id="item-${id}" class="scanned-item" src="${src}">`;
-            });
-            screen.innerHTML += itemElements + `<div id="suspicious-item-box"></div>`;
-            
-            document.querySelectorAll('.scanned-item').forEach(el => el.style.opacity = '1');
-
-            const suspiciousItemId = itemsInScan[Math.floor(Math.random() * itemsInScan.length)];
-            const suspiciousItemElement = document.getElementById(`item-${suspiciousItemId}`);
-            const suspiciousBox = document.getElementById('suspicious-item-box');
-            
-            suspiciousBox.style.left = suspiciousItemElement.offsetLeft + 'px';
-            suspiciousBox.style.top = suspiciousItemElement.offsetTop + 'px';
-            suspiciousBox.style.width = suspiciousItemElement.offsetWidth + 'px';
-            suspiciousBox.style.height = suspiciousItemElement.offsetHeight + 'px';
-            suspiciousBox.style.display = 'block';
-
-            const suspiciousItemName = itemData.carryOn.find(i => i.id === suspiciousItemId).name;
-            securityLog.innerHTML += `<div style="color:#ffc107;">> [警告] 发现可疑物品 (${suspiciousItemName})。<span class="lang-vi">[CẢNH BÁO] Phát hiện vật thể đáng ngờ.</span></div>`;
-        }, 2000);
-    }
-    
-    // --- Initialization ---
-    function initialize() {
-        document.getElementById('checked-luggage-list').innerHTML = itemData.checked.map(item => `<div><label><input type="checkbox" onchange="updateLuggage()" value="${item.weight}"> ${item.name} <span class="lang-vi">${item.vi}</span></label></div>`).join('');
-        document.getElementById('carry-on-luggage-list').innerHTML = itemData.carryOn.map(item => `<div><label><input type="checkbox" onchange="updateLuggage()" value="${item.id}" checked> ${item.name} <span class="lang-vi">${item.vi}</span></label></div>`).join('');
-        updateLuggage();
-
-        const createSeatMap = (containerId, isInteractive) => {
-            const container = document.getElementById(containerId); container.innerHTML = '';
-            const rows = ['A', 'B', 'C', '', 'D', 'E', 'F'];
-            for (let i = 1; i <= 10; i++) {
-                rows.forEach(row => {
-                    const seat = document.createElement('div');
-                    if (row === '') { seat.classList.add('aisle'); seat.innerText = i; } 
-                    else {
-                        seat.classList.add('seat'); seat.innerText = i + row;
-                        if (Math.random() > 0.65) { seat.classList.add('occupied'); } 
-                        else {
-                            seat.classList.add('available');
-                            if (isInteractive) {
-                                seat.onclick = function() {
-                                    if (!checkinData.passengerFound) {
-                                        alert('请先查找乘客! (Vui lòng tra cứu hành khách trước!)');
-                                        return;
-                                    }
-                                    if (this.classList.contains('available')) {
-                                        document.querySelectorAll(`#${containerId} .seat.selected`).forEach(s => s.classList.remove('selected'));
-                                        this.classList.add('selected');
-                                        checkinData.seat = this.innerText;
-                                        checkinLog.innerHTML += `<p>已选座位 <span class="lang-vi">Đã chọn ghế</span> ${this.innerText}.</p>`;
-                                    }
-                                };
-                            }
-                        }
-                    }
-                    container.appendChild(seat);
-                });
-            }
-        };
-        createSeatMap('seat-map-checkin', true);
-        createSeatMap('seat-map-fa', false);
-    }
-    window.onload = initialize;
-</script>
-
+            setTimeout(() => {
+                resetScanner();
+            }, 5000);
+        }
+    });
+    </script>
 </body>
 </html>
